@@ -15,6 +15,7 @@
 package com.example.lazer_sport_app.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -98,6 +99,8 @@ data class BrinquedoDto(
     @SerialName("exibir_na_loja") val exibirNaLoja: Boolean = true,
 )
 
+
+
 /** O DRF pagina assim: { count, next, previous, results: [...] } */
 @Serializable
 data class Paginado<T>(
@@ -112,6 +115,12 @@ data class Paginado<T>(
 // ============================================================
 
 interface ApiService {
+
+    @GET("pecas/")
+    suspend fun pecas(
+        @Query("page") pagina: Int = 1,
+        @Query("busca") busca: String? = null,
+    ): Paginado<BrinquedoDto>
 
     @POST("auth/login/")
     suspend fun login(@Body corpo: LoginRequest): AuthResponse
@@ -151,25 +160,31 @@ class TokenStore @Inject constructor(
 ) {
     private val CHAVE_TOKEN = stringPreferencesKey("token")
     private val CHAVE_NOME = stringPreferencesKey("nome")
+    private val CHAVE_VISITANTE = booleanPreferencesKey("visitante")
 
-    val token: Flow<String?> = contexto.dataStore.data
-        .map { it[CHAVE_TOKEN] }
+    val token: Flow<String?> = contexto.dataStore.data.map { it[CHAVE_TOKEN] }
+    val nome: Flow<String?> = contexto.dataStore.data.map { it[CHAVE_NOME] }
 
-    val nome: Flow<String?> = contexto.dataStore.data
-        .map { it[CHAVE_NOME] }
+    /** Escolheu "continuar sem login". Sobrevive a fechar o app. */
+    val visitante: Flow<Boolean> = contexto.dataStore.data
+        .map { it[CHAVE_VISITANTE] ?: false }
 
     suspend fun salvar(token: String, nome: String) {
         contexto.dataStore.edit {
             it[CHAVE_TOKEN] = token
             it[CHAVE_NOME] = nome
+            it[CHAVE_VISITANTE] = false   // logou de verdade: sai do modo visitante
         }
+    }
+
+    suspend fun marcarVisitante() {
+        contexto.dataStore.edit { it[CHAVE_VISITANTE] = true }
     }
 
     suspend fun limpar() {
         contexto.dataStore.edit { it.clear() }
     }
 
-    /** Usado pelo interceptor, que roda fora de corrotina. */
     fun tokenAgora(): String? = runBlocking { token.first() }
 }
 
@@ -272,6 +287,10 @@ class AuthRepository @Inject constructor(
 ) {
     val estaLogado: Flow<Boolean> = tokenStore.token.map { !it.isNullOrBlank() }
     val nomeUsuario: Flow<String?> = tokenStore.nome
+
+    val modoVisitante: Flow<Boolean> = tokenStore.visitante
+
+    suspend fun continuarSemLogin() = tokenStore.marcarVisitante()
 
     suspend fun entrar(login: String, senha: String): Resultado<UsuarioDto> =
         try {

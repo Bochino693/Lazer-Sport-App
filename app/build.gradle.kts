@@ -20,11 +20,28 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Producao. O buildType debug sobrescreve pra apontar no Django local.
         buildConfigField(
             "String",
             "BASE_URL",
-            "\"https://www.lazersport.com.br/api/\"",
+            "\"https://www.lazersport.com.br/api/v1/\"",
         )
+    }
+
+    buildTypes {
+        debug {
+            // 10.0.2.2 = a sua maquina, vista de dentro do emulador.
+            // Em celular fisico troque pelo IP da LAN (ex.: 192.168.0.10).
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"http://10.0.2.2:8000/api/v1/\"",
+            )
+        }
+        release {
+            isMinifyEnabled = false
+        }
     }
 
     buildFeatures {
@@ -53,6 +70,12 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.12.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
+
+    // Faltavam: hiltViewModel()/collectAsState dentro de @Composable
+    // dependem destes dois. Sem eles o MenuViewModel nao compila.
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+
     implementation("androidx.navigation:navigation-compose:2.9.8")
     implementation("androidx.datastore:datastore-preferences:1.2.1")
 
@@ -73,6 +96,10 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.android.material:material:1.13.0")
+
+    // Carregamento de imagens da API
+    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation(platform("androidx.compose:compose-bom:2026.06.00"))

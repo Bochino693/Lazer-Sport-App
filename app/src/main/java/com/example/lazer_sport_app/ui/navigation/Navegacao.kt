@@ -1,19 +1,19 @@
 // app/src/main/java/com/example/lazer_sport_app/ui/navigation/Navegacao.kt
 //
-// Todo o roteamento do app em um lugar. Cada tela vira uma rota; o
-// NavHost troca o conteudo sem criar Activity nova.
+// Todo o roteamento do app em um lugar.
 //
-// FLUXO DE ABERTURA:
-//   tem token salvo? -> sim: abre no MENU
-//                    -> nao: abre em BEM_VINDO
+// FLUXO DE ABERTURA -- tres estados possiveis:
+//   token salvo      -> abre no MENU (logado de verdade)
+//   modo visitante   -> abre no MENU (escolheu "continuar sem login")
+//   nenhum dos dois  -> abre em BEM_VINDO
 //
-// Enquanto o DataStore esta sendo lido, estaLogado vale null e o
-// loading aparece. Sem isso o app piscaria a tela de boas-vindas por
-// um instante pra quem ja esta logado.
+// Enquanto o DataStore esta sendo lido, `entrada` vale null e o loading
+// aparece. Sem isso o app piscaria a tela de boas-vindas pra quem ja
+// passou por ela.
 //
-// popUpTo(...) { inclusive = true } no login APAGA as telas de entrada
-// da pilha. Sem isso, apertar "voltar" no menu joga o cliente de volta
-// no login ja autenticado -- bug classico e confuso.
+// popUpTo(BEM_VINDO) { inclusive = true } APAGA as telas de entrada da
+// pilha. Sem isso, apertar "voltar" no menu joga o cliente de volta na
+// tela de login -- bug classico e confuso.
 
 package com.example.lazer_sport_app.ui.navigation
 
@@ -25,8 +25,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,17 +47,19 @@ import androidx.navigation.compose.rememberNavController
 import com.example.lazer_sport_app.data.AuthRepository
 import com.example.lazer_sport_app.ui.login.BemVindoScreen
 import com.example.lazer_sport_app.ui.login.LoginScreen
+import com.example.lazer_sport_app.ui.menu.MenuScreen
+import com.example.lazer_sport_app.ui.menu.MenuViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // ============================================================
 // ROTAS
 // ============================================================
-// Strings soltas espalhadas pelo codigo viram erro de digitacao que
-// so aparece em runtime. Centralizadas aqui, o compilador ajuda.
 
 object Rotas {
     const val BEM_VINDO = "bem_vindo"
@@ -65,33 +67,55 @@ object Rotas {
     const val REGISTRO = "registro"
     const val MENU = "menu"
     const val CATALOGO = "catalogo"
+    const val BUSCA = "busca"
+    const val PROMOCOES = "promocoes"
+    const val COMBOS = "combos"
     const val PECAS = "pecas"
     const val MANUTENCAO = "manutencao"
+    const val ESTABELECIMENTOS = "estabelecimentos"
+    const val EVENTOS = "eventos"
+    const val CONTATO = "contato"
     const val CARRINHO = "carrinho"
     const val PEDIDOS = "pedidos"
     const val CONTA = "conta"
 
-    // Rota com argumento: navegue com "detalhe/42"
     const val DETALHE = "detalhe/{id}"
     fun detalhe(id: Int) = "detalhe/$id"
+
+    const val CATEGORIA = "categoria/{id}"
+    fun categoria(id: Int) = "categoria/$id"
 }
 
 // ============================================================
-// VIEWMODEL DE SESSAO
+// ESTADO DE ENTRADA
 // ============================================================
+
+/** Por onde o app deve abrir. */
+enum class Entrada { MENU, BEM_VINDO }
 
 @HiltViewModel
 class SessaoViewModel @Inject constructor(
-    repositorio: AuthRepository,
+    private val repositorio: AuthRepository,
 ) : ViewModel() {
 
+    val nomeUsuario: StateFlow<String?> = repositorio.nomeUsuario
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val estaLogado: StateFlow<Boolean> = repositorio.estaLogado
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     /** null = ainda lendo o DataStore. */
-    val estaLogado: StateFlow<Boolean?> = repositorio.estaLogado
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = null,
-        )
+    val entrada: StateFlow<Entrada?> =
+        combine(repositorio.estaLogado, repositorio.modoVisitante) { logado, visitante ->
+            if (logado || visitante) Entrada.MENU else Entrada.BEM_VINDO
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun continuarSemLogin(aoConcluir: () -> Unit) {
+        viewModelScope.launch {
+            repositorio.continuarSemLogin()
+            aoConcluir()
+        }
+    }
 }
 
 // ============================================================
@@ -103,27 +127,38 @@ fun NavegacaoApp(
     navController: NavHostController = rememberNavController(),
     sessaoViewModel: SessaoViewModel = hiltViewModel(),
 ) {
+    val entrada by sessaoViewModel.entrada.collectAsState()
     val logado by sessaoViewModel.estaLogado.collectAsState()
     val uriHandler = LocalUriHandler.current
 
-    if (logado == null) {
+    if (entrada == null) {
         Carregando()
         return
     }
 
-    val destinoInicial =
-        if (logado == true) Rotas.MENU else Rotas.BEM_VINDO
+    // Leva pro menu limpando a pilha de entrada. Usado tanto pelo login
+    // quanto pelo "continuar sem login" -- os dois terminam no mesmo lugar.
+    fun irParaMenu() {
+        navController.navigate(Rotas.MENU) {
+            popUpTo(Rotas.BEM_VINDO) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
 
     NavHost(
         navController = navController,
-        startDestination = destinoInicial,
+        startDestination = if (entrada == Entrada.MENU) Rotas.MENU else Rotas.BEM_VINDO,
     ) {
 
         composable(Rotas.BEM_VINDO) {
             BemVindoScreen(
                 aoEntrar = { navController.navigate(Rotas.LOGIN) },
                 aoCriarConta = { navController.navigate(Rotas.REGISTRO) },
-                aoContinuarSemLogin = { navController.navigate(Rotas.CATALOGO) },
+                // ERA o bug: mandava pro CATALOGO (placeholder) em vez do MENU.
+                // Agora marca o modo visitante e abre o menu de verdade.
+                aoContinuarSemLogin = {
+                    sessaoViewModel.continuarSemLogin { irParaMenu() }
+                },
                 aoContinuarComGoogle = {
                     uriHandler.openUri(
                         "https://www.lazersport.com.br/accounts/google/login/?process=login"
@@ -134,45 +169,66 @@ fun NavegacaoApp(
 
         composable(Rotas.LOGIN) {
             LoginScreen(
-                aoEntrar = {
-                    navController.navigate(Rotas.MENU) {
-                        popUpTo(Rotas.BEM_VINDO) { inclusive = true }
-                    }
-                },
+                aoEntrar = { irParaMenu() },
                 aoCriarConta = { navController.navigate(Rotas.REGISTRO) },
-                aoEntrarSemConta = { navController.navigate(Rotas.CATALOGO) },
+                aoEntrarSemConta = {
+                    sessaoViewModel.continuarSemLogin { irParaMenu() }
+                },
             )
         }
 
-        // ---- Placeholders: troque um a um pelas telas reais ----
+        // ---------------- MENU ----------------
         composable(Rotas.MENU) {
-            EmConstrucao(
-                nome = "Início",
-                mensagem = "Sua sessão está pronta. A próxima entrega conecta o menu aos dados reais do site.",
-                textoAcao = "Abrir o site",
-                aoAcao = { uriHandler.openUri("https://www.lazersport.com.br/") },
+            val menuViewModel: MenuViewModel = hiltViewModel()
+            val estado by menuViewModel.estado.collectAsState()
+
+            MenuScreen(
+                conteudo = estado.conteudo,
+                estaLogado = logado,
+                aoNavegar = { rota -> navController.navigate(rota) },
+                aoAbrirItem = { id -> navController.navigate(Rotas.detalhe(id)) },
             )
         }
-        composable(Rotas.CATALOGO) {
-            EmConstrucao(
-                nome = "Catálogo",
-                mensagem = "O catálogo nativo será a próxima tela. Enquanto isso, você já pode ver todos os brinquedos.",
-                textoAcao = "Ver brinquedos agora",
-                aoAcao = {
-                    uriHandler.openUri("https://www.lazersport.com.br/brinquedos/")
-                },
-            )
-        }
-        composable(Rotas.REGISTRO) {
-            EmConstrucao(
-                nome = "Criar conta",
-                mensagem = "O cadastro nativo está sendo preparado para usar a mesma conta do site.",
-                textoAcao = "Cadastrar pelo site",
-                aoAcao = {
-                    uriHandler.openUri("https://www.lazersport.com.br/registrar/")
-                },
-            )
-        }
+
+        // ---------------- PLACEHOLDERS ----------------
+        // Troque um a um pelas telas reais. Todas precisam existir aqui:
+        // clicar numa rota nao registrada derruba o app.
+
+        placeholder(Rotas.CATALOGO, "Catálogo", "brinquedos/")
+        placeholder(Rotas.BUSCA, "Busca", "brinquedos/")
+        placeholder(Rotas.PROMOCOES, "Promoções", "loja/")
+        placeholder(Rotas.COMBOS, "Combos", "loja/")
+        placeholder(Rotas.PECAS, "Peças de Reposição", "pecas-reposicao/")
+        placeholder(Rotas.MANUTENCAO, "Manutenções", "manutencoes/")
+        placeholder(Rotas.ESTABELECIMENTOS, "Estabelecimentos", "estabelecimentos/")
+        placeholder(Rotas.EVENTOS, "Eventos", "eventos/")
+        placeholder(Rotas.CONTATO, "Contato", "")
+        placeholder(Rotas.CARRINHO, "Carrinho", "carrinho/")
+        placeholder(Rotas.PEDIDOS, "Meus pedidos", "meus-pedidos/")
+        placeholder(Rotas.CONTA, "Minha conta", "perfil/")
+        placeholder(Rotas.REGISTRO, "Criar conta", "registrar/")
+        placeholder(Rotas.DETALHE, "Detalhe", "brinquedos/")
+        placeholder(Rotas.CATEGORIA, "Categoria", "brinquedos/")
+    }
+}
+
+// Registra uma rota placeholder que aponta pro trecho equivalente do site.
+private fun androidx.navigation.NavGraphBuilder.placeholder(
+    rota: String,
+    nome: String,
+    caminhoNoSite: String,
+) {
+    composable(rota) {
+        val uriHandler = LocalUriHandler.current
+        EmConstrucao(
+            nome = nome,
+            mensagem = "Esta tela nativa está sendo construída. " +
+                    "Por enquanto você pode acessar pelo site.",
+            textoAcao = "Abrir no site",
+            aoAcao = {
+                uriHandler.openUri("https://www.lazersport.com.br/$caminhoNoSite")
+            },
+        )
     }
 }
 
@@ -182,9 +238,7 @@ private fun Carregando() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary
-        )
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 
