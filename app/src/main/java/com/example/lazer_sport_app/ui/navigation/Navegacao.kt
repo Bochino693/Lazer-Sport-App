@@ -1,17 +1,26 @@
 // app/src/main/java/com/example/lazer_sport_app/ui/navigation/Navegacao.kt
 //
 // Todo o roteamento do app em um lugar. Cada tela vira uma rota; o
-// NavHost troca o conteúdo sem criar Activity nova.
+// NavHost troca o conteudo sem criar Activity nova.
 //
-// Detalhe importante no fluxo de login: quando o usuário entra,
-// usamos popUpTo(...) { inclusive = true } pra APAGAR a tela de login
+// FLUXO DE ABERTURA:
+//   tem token salvo? -> sim: abre no MENU
+//                    -> nao: abre em BEM_VINDO
+//
+// Enquanto o DataStore esta sendo lido, estaLogado vale null e o
+// loading aparece. Sem isso o app piscaria a tela de boas-vindas por
+// um instante pra quem ja esta logado.
+//
+// popUpTo(...) { inclusive = true } no login APAGA as telas de entrada
 // da pilha. Sem isso, apertar "voltar" no menu joga o cliente de volta
-// no login já autenticado -- bug clássico e confuso.
+// no login ja autenticado -- bug classico e confuso.
 
 package com.example.lazer_sport_app.ui.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,25 +29,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lazer_sport_app.data.AuthRepository
+import com.example.lazer_sport_app.ui.login.BemVindoScreen
 import com.example.lazer_sport_app.ui.login.LoginScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
 // ============================================================
 // ROTAS
 // ============================================================
-// Strings soltas espalhadas pelo código viram erro de digitação que
-// só aparece em runtime. Centralizadas aqui, o compilador ajuda.
+// Strings soltas espalhadas pelo codigo viram erro de digitacao que
+// so aparece em runtime. Centralizadas aqui, o compilador ajuda.
 
 object Rotas {
+    const val BEM_VINDO = "bem_vindo"
     const val LOGIN = "login"
     const val REGISTRO = "registro"
     const val MENU = "menu"
@@ -55,7 +67,7 @@ object Rotas {
 }
 
 // ============================================================
-// VIEWMODEL DE SESSÃO
+// VIEWMODEL DE SESSAO
 // ============================================================
 
 @HiltViewModel
@@ -63,12 +75,12 @@ class SessaoViewModel @Inject constructor(
     repositorio: AuthRepository,
 ) : ViewModel() {
 
-    /** Se já existe token salvo, o app abre direto no menu. */
+    /** null = ainda lendo o DataStore. */
     val estaLogado: StateFlow<Boolean?> = repositorio.estaLogado
         .stateIn(
-            scope = androidx.lifecycle.viewModelScope,
+            scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = null,   // null = ainda lendo o DataStore
+            initialValue = null,
         )
 }
 
@@ -83,67 +95,64 @@ fun NavegacaoApp(
 ) {
     val logado by sessaoViewModel.estaLogado.collectAsState()
 
-    // Enquanto lê o DataStore (null), não decide nada -- evita piscar
-    // a tela de login pra quem já está autenticado.
-    if (logado == null) return
+    if (logado == null) {
+        Carregando()
+        return
+    }
 
-    val destinoInicial = if (logado == true) Rotas.MENU else Rotas.LOGIN
+    val destinoInicial =
+        if (logado == true) Rotas.MENU else Rotas.BEM_VINDO
 
     NavHost(
         navController = navController,
         startDestination = destinoInicial,
     ) {
 
+        composable(Rotas.BEM_VINDO) {
+            BemVindoScreen(
+                aoEntrar = { navController.navigate(Rotas.LOGIN) },
+                aoCriarConta = { navController.navigate(Rotas.REGISTRO) },
+                aoVerCatalogo = { navController.navigate(Rotas.CATALOGO) },
+            )
+        }
+
         composable(Rotas.LOGIN) {
             LoginScreen(
                 aoEntrar = {
                     navController.navigate(Rotas.MENU) {
-                        popUpTo(Rotas.LOGIN) { inclusive = true }
+                        popUpTo(Rotas.BEM_VINDO) { inclusive = true }
                     }
                 },
                 aoCriarConta = { navController.navigate(Rotas.REGISTRO) },
-                aoEntrarSemConta = {
-                    navController.navigate(Rotas.CATALOGO)
-                },
+                aoEntrarSemConta = { navController.navigate(Rotas.CATALOGO) },
             )
         }
 
-        // ---- As rotas abaixo entram nas próximas fatias ----
-        // Deixe comentadas até criar cada tela; descomente uma a uma.
-        //
-        // composable(Rotas.REGISTRO) { RegistroScreen(...) }
-        // composable(Rotas.MENU)     { MenuScreen(...) }
-        // composable(Rotas.CATALOGO) { CatalogoScreen(...) }
-        //
-        // composable(
-        //     route = Rotas.DETALHE,
-        //     arguments = listOf(navArgument("id") { type = NavType.IntType }),
-        // ) { entrada ->
-        //     val id = entrada.arguments?.getInt("id") ?: return@composable
-        //     DetalheScreen(id = id)
-        // }
-
-        // Placeholder temporário: sem isso o app quebra ao logar,
-        // porque a rota MENU ainda não existe. Apague quando criar
-        // a MenuScreen de verdade.
-        composable(Rotas.MENU) {
-            TelaEmConstrucao("Menu")
-        }
-        composable(Rotas.CATALOGO) {
-            TelaEmConstrucao("Catálogo")
-        }
-        composable(Rotas.REGISTRO) {
-            TelaEmConstrucao("Criar conta")
-        }
+        // ---- Placeholders: troque um a um pelas telas reais ----
+        composable(Rotas.MENU) { EmConstrucao("Menu") }
+        composable(Rotas.CATALOGO) { EmConstrucao("Catalogo") }
+        composable(Rotas.REGISTRO) { EmConstrucao("Criar conta") }
     }
 }
 
 @Composable
-private fun TelaEmConstrucao(nome: String) {
+private fun Carregando() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text("Tela \"$nome\" em construção")
+        CircularProgressIndicator(
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun EmConstrucao(nome: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("Tela \"$nome\" em construcao")
     }
 }
