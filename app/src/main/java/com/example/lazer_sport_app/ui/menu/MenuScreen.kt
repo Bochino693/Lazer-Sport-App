@@ -2,27 +2,30 @@
 //
 // TELA PRINCIPAL DO APP -- espelha a home do lazersport.com.br.
 //
-// Estrutura, de fora pra dentro:
-//   ModalNavigationDrawer  -> gaveta lateral (o "drawer" do cabecalho do site)
-//     Scaffold             -> TopAppBar + NavigationBar inferior
-//       LazyColumn         -> as secoes roláveis, na mesma ordem do site
+// RITMO VISUAL (o que mudou nesta versao):
+// O site nao e uma pagina branca com listas. Ele alterna blocos:
 //
-// As secoes seguem home.html:
-//   hero / stats / categorias / promocoes / brinquedos em destaque /
-//   manutencao / pecas / combos / estabelecimentos / eventos / contato
+//   hero            -> azul profundo, brilhos radiais
+//   categorias      -> bloco ESCURO de contraste
+//   promocoes       -> cartao CLARO arredondado, com grade de fundo
+//   destaques       -> cartao CLARO
+//   manutencao      -> faixa AZUL solida (chamada pra acao)
+//   pecas / combos  -> cartoes CLAROS
+//   estabelecim.    -> bloco ESCURO
+//   eventos         -> bloco ESCURO
+//   contato         -> cartao CLARO
 //
-// DADOS: por enquanto vem de `dadosDemo()` no fim do arquivo, pra tela
-// rodar sem depender da API (que esta fora do ar). Quando o Django
-// voltar, troque `dadosDemo()` por um MenuViewModel com Hilt -- as
-// data classes ja espelham os DTOs de Network.kt.
+// Os fundos vem de FundoSecoes.kt -- degrade + brilhos + grade, tudo
+// vetorial, sem nenhuma imagem no APK.
 //
-// DEPENDENCIA NOVA no app/build.gradle.kts:
+// DEPENDENCIAS no app/build.gradle.kts:
 //   implementation("io.coil-kt.coil3:coil-compose:3.1.0")
 //   implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
 
 package com.example.lazer_sport_app.ui.menu
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +65,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -80,7 +84,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.DrawerValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -97,6 +100,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.lazer_sport_app.ui.theme.Amarelo
 import com.example.lazer_sport_app.ui.theme.AzulEscuro
@@ -108,8 +112,6 @@ import kotlinx.coroutines.launch
 // ============================================================
 // MODELOS DE APRESENTACAO
 // ============================================================
-// Separados dos DTOs de rede de proposito: a tela nao deve quebrar
-// quando o serializer do Django mudar um campo.
 
 data class ItemVitrine(
     val id: Int,
@@ -141,6 +143,10 @@ private data class ItemGaveta(
     val icone: ImageVector,
     val rota: String,
 )
+
+private val BrancoSuave = Color(0xFFF4F8FF)
+private val AzulPill = Color(0xFF91C2FF)
+private val AzulProfundo = Color(0xFF063D83)
 
 // ============================================================
 // TELA
@@ -185,6 +191,7 @@ fun MenuScreen(
         },
     ) {
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
                     title = {
@@ -192,6 +199,7 @@ fun MenuScreen(
                             text = "LAZER & SPORT",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp,
                         )
                     },
                     navigationIcon = {
@@ -253,10 +261,11 @@ fun MenuScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(bottom = 32.dp),
+                contentPadding = PaddingValues(bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
 
-                // ---------- HERO ----------
+                // ---------- HERO (escuro, sangrando ate as bordas) ----------
                 item {
                     Hero(
                         aoVerCatalogo = { aoNavegar("catalogo") },
@@ -264,111 +273,384 @@ fun MenuScreen(
                     )
                 }
 
-                // ---------- NUMEROS ----------
-                item { FaixaNumeros() }
-
-                // ---------- CATEGORIAS ----------
+                // ---------- CATEGORIAS (bloco escuro de contraste) ----------
                 if (conteudo.categorias.isNotEmpty()) {
                     item {
-                        TituloSecao(
+                        SecaoEscura(
+                            kicker = "CATEGORIAS",
                             titulo = "Encontre pela categoria",
                             subtitulo = "Escolha o tipo de diversão para o seu espaço",
-                        )
-                    }
-                    item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
                         ) {
-                            items(conteudo.categorias, key = { it.id }) { categoria ->
-                                BolhaCategoria(
-                                    categoria = categoria,
-                                    aoClicar = { aoNavegar("categoria/${categoria.id}") },
-                                )
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 22.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                items(conteudo.categorias, key = { it.id }) { categoria ->
+                                    BolhaCategoria(
+                                        categoria = categoria,
+                                        aoClicar = {
+                                            aoNavegar("categoria/${categoria.id}")
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                // ---------- PROMOCOES ----------
+                // ---------- PROMOCOES (cartao claro) ----------
                 if (conteudo.promocoes.isNotEmpty()) {
                     item {
-                        TituloSecao(
+                        SecaoClara(
+                            kicker = "OFERTAS",
                             titulo = "Promoções",
                             subtitulo = "Condições especiais por tempo limitado",
                             acao = "Ver todas",
                             aoAcao = { aoNavegar("promocoes") },
-                        )
+                        ) {
+                            CarrosselItens(conteudo.promocoes, aoAbrirItem)
+                        }
                     }
-                    item { CarrosselItens(conteudo.promocoes, aoAbrirItem) }
                 }
 
-                // ---------- DESTAQUES ----------
+                // ---------- DESTAQUES (cartao claro) ----------
                 if (conteudo.destaques.isNotEmpty()) {
                     item {
-                        TituloSecao(
+                        SecaoClara(
+                            kicker = "MAIS PROCURADOS",
                             titulo = "Brinquedos em Destaque",
-                            subtitulo = "Os mais procurados para festas e eventos",
+                            subtitulo = "Os campeões de festas, eventos e parques",
                             acao = "Ver catálogo",
                             aoAcao = { aoNavegar("catalogo") },
-                        )
+                        ) {
+                            CarrosselItens(conteudo.destaques, aoAbrirItem)
+                        }
                     }
-                    item { CarrosselItens(conteudo.destaques, aoAbrirItem) }
                 }
 
-                // ---------- MANUTENCAO ----------
+                // ---------- MANUTENCAO (faixa azul solida) ----------
                 item {
                     FaixaManutencao(aoSolicitar = { aoNavegar("manutencao") })
                 }
 
-                // ---------- PECAS ----------
+                // ---------- PECAS (cartao claro) ----------
                 if (conteudo.pecas.isNotEmpty()) {
                     item {
-                        TituloSecao(
+                        SecaoClara(
+                            kicker = "ASSISTÊNCIA",
                             titulo = "Peças de Reposição",
                             subtitulo = "Componentes originais para o seu equipamento",
                             acao = "Ver todas",
                             aoAcao = { aoNavegar("pecas") },
-                        )
+                        ) {
+                            CarrosselItens(conteudo.pecas, aoAbrirItem)
+                        }
                     }
-                    item { CarrosselItens(conteudo.pecas, aoAbrirItem) }
                 }
 
-                // ---------- COMBOS ----------
+                // ---------- COMBOS (cartao claro) ----------
                 if (conteudo.combos.isNotEmpty()) {
                     item {
-                        TituloSecao(
+                        SecaoClara(
+                            kicker = "PACOTES",
                             titulo = "Combos",
-                            subtitulo = "Pacotes montados com o melhor custo-benefício",
-                        )
+                            subtitulo = "Montados com o melhor custo-benefício",
+                            acao = "Ver combos",
+                            aoAcao = { aoNavegar("combos") },
+                        ) {
+                            CarrosselItens(conteudo.combos, aoAbrirItem)
+                        }
                     }
-                    item { CarrosselItens(conteudo.combos, aoAbrirItem) }
                 }
 
-                // ---------- ESTABELECIMENTOS ----------
+                // ---------- ESTABELECIMENTOS (bloco escuro) ----------
                 if (conteudo.estabelecimentos.isNotEmpty()) {
                     item {
-                        TituloSecao(
+                        SecaoEscura(
+                            kicker = "PARCEIROS",
                             titulo = "Onde nossos brinquedos fazem a diferença",
                             subtitulo = "Parques, buffets e espaços que confiam na gente",
-                        )
+                        ) {
+                            CarrosselLargo(conteudo.estabelecimentos)
+                        }
                     }
-                    item { CarrosselLargo(conteudo.estabelecimentos) }
                 }
 
-                // ---------- EVENTOS ----------
+                // ---------- EVENTOS (bloco escuro) ----------
                 if (conteudo.eventos.isNotEmpty()) {
                     item {
-                        TituloSecao(
+                        SecaoEscura(
+                            kicker = "PORTFÓLIO",
                             titulo = "Eventos Realizados",
                             subtitulo = "Um pouco do que já montamos por aí",
-                        )
+                        ) {
+                            CarrosselLargo(conteudo.eventos)
+                        }
                     }
-                    item { CarrosselLargo(conteudo.eventos) }
                 }
 
                 // ---------- CONTATO ----------
                 item { BlocoContato(aoFalarConosco = { aoNavegar("contato") }) }
+            }
+        }
+    }
+}
+
+// ============================================================
+// ESTRUTURA DAS SECOES
+// ============================================================
+
+/** Pilula de rotulo acima do titulo -- o `.ls-section-kicker` do site. */
+@Composable
+private fun Kicker(texto: String, sobreEscuro: Boolean) {
+    val corTexto = if (sobreEscuro) AzulPill else Color(0xFF0758C9)
+    val corFundo = Color(0xFF0878F9).copy(alpha = if (sobreEscuro) 0.16f else 0.10f)
+    val corBorda = Color(0xFF63A6FF).copy(alpha = 0.28f)
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(corFundo)
+            .border(1.dp, corBorda, RoundedCornerShape(999.dp))
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+    ) {
+        Text(
+            text = texto,
+            color = corTexto,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.4.sp,
+        )
+    }
+}
+
+/** Cartao claro arredondado, com grade de fundo. */
+@Composable
+private fun SecaoClara(
+    kicker: String,
+    titulo: String,
+    subtitulo: String?,
+    acao: String? = null,
+    aoAcao: () -> Unit = {},
+    conteudo: @Composable () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp)
+            .clip(RoundedCornerShape(RaioSecao))
+            .fundoSecaoClara()
+            .padding(vertical = 30.dp),
+    ) {
+        CabecalhoSecao(
+            kicker = kicker,
+            titulo = titulo,
+            subtitulo = subtitulo,
+            acao = acao,
+            aoAcao = aoAcao,
+            corTitulo = corTituloSecaoClara(),
+            corSubtitulo = corSubtituloSecaoClara(),
+            sobreEscuro = false,
+        )
+        Spacer(Modifier.height(20.dp))
+        conteudo()
+    }
+}
+
+/** Bloco escuro sangrando ate as bordas -- quebra o branco da lista. */
+@Composable
+private fun SecaoEscura(
+    kicker: String,
+    titulo: String,
+    subtitulo: String?,
+    acao: String? = null,
+    aoAcao: () -> Unit = {},
+    conteudo: @Composable () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fundoSecaoEscura()
+            .padding(vertical = 34.dp),
+    ) {
+        CabecalhoSecao(
+            kicker = kicker,
+            titulo = titulo,
+            subtitulo = subtitulo,
+            acao = acao,
+            aoAcao = aoAcao,
+            corTitulo = BrancoSuave,
+            corSubtitulo = Color(0xFFA9BBD4),
+            sobreEscuro = true,
+        )
+        Spacer(Modifier.height(22.dp))
+        conteudo()
+    }
+}
+
+@Composable
+private fun CabecalhoSecao(
+    kicker: String,
+    titulo: String,
+    subtitulo: String?,
+    acao: String?,
+    aoAcao: () -> Unit,
+    corTitulo: Color,
+    corSubtitulo: Color,
+    sobreEscuro: Boolean,
+) {
+    Column(Modifier.padding(horizontal = 22.dp)) {
+        Kicker(kicker, sobreEscuro)
+        Spacer(Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = titulo,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = corTitulo,
+                    lineHeight = 30.sp,
+                )
+                if (subtitulo != null) {
+                    Spacer(Modifier.height(7.dp))
+                    Text(
+                        text = subtitulo,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = corSubtitulo,
+                    )
+                }
+            }
+            if (acao != null) {
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFF004AAD), Color(0xFF0878F9)),
+                            ),
+                        )
+                        .clickable(onClick = aoAcao)
+                        .padding(horizontal = 15.dp, vertical = 12.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = acao,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================
+// HERO
+// ============================================================
+
+@Composable
+private fun Hero(
+    aoVerCatalogo: () -> Unit,
+    aoOrcamento: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fundoHero()
+            .padding(horizontal = 24.dp, vertical = 38.dp),
+    ) {
+        Kicker("LAZER & SPORT BRINQUEDOS", sobreEscuro = true)
+        Spacer(Modifier.height(18.dp))
+        Text(
+            text = "Diversão que\nmovimenta o seu\nnegócio",
+            style = MaterialTheme.typography.displayLarge,
+            color = Color.White,
+            lineHeight = 40.sp,
+        )
+        Spacer(Modifier.height(14.dp))
+        Text(
+            text = "Locação e venda de brinquedos, arcades e equipamentos, " +
+                    "com fabricação própria e assistência técnica.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.82f),
+        )
+        Spacer(Modifier.height(24.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(
+                onClick = aoVerCatalogo,
+                shape = RoundedCornerShape(RaioBotao),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = AzulProfundo,
+                ),
+            ) {
+                Text("Ver catálogo", fontWeight = FontWeight.Black)
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(RaioBotao))
+                    .border(
+                        1.dp,
+                        Color.White.copy(alpha = 0.35f),
+                        RoundedCornerShape(RaioBotao),
+                    )
+                    .clickable(onClick = aoOrcamento)
+                    .padding(horizontal = 20.dp, vertical = 13.dp),
+            ) {
+                Text("Orçamento", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(Modifier.height(28.dp))
+        FaixaNumeros()
+    }
+}
+
+/** Numeros da empresa, em cartoes translucidos sobre o hero. */
+@Composable
+private fun FaixaNumeros() {
+    Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+        listOf(
+            "+20" to "anos de estrada",
+            "+500" to "eventos montados",
+            "100%" to "fabricação própria",
+        ).forEach { (numero, rotulo) ->
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.08f))
+                    .border(
+                        1.dp,
+                        Color.White.copy(alpha = 0.14f),
+                        RoundedCornerShape(16.dp),
+                    )
+                    .padding(vertical = 14.dp, horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = numero,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = AzulPill,
+                    fontWeight = FontWeight.Black,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = rotulo,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.72f),
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp,
+                )
             }
         }
     }
@@ -388,16 +670,11 @@ private fun GavetaLazerSport(
     ModalDrawerSheet(
         drawerContainerColor = MaterialTheme.colorScheme.surface,
     ) {
-        // Cabecalho com o degrade da marca
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(168.dp)
-                .background(
-                    Brush.linearGradient(
-                        listOf(AzulEscuro, MaterialTheme.colorScheme.primary, Vermelho),
-                    ),
-                ),
+                .height(178.dp)
+                .fundoHero(),
         ) {
             IconButton(
                 onClick = aoFechar,
@@ -420,10 +697,11 @@ private fun GavetaLazerSport(
                     color = Color.White,
                     fontWeight = FontWeight.ExtraBold,
                 )
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = "Brinquedos e diversão para o seu espaço",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = Color.White.copy(alpha = 0.8f),
                 )
             }
         }
@@ -466,7 +744,7 @@ private fun GavetaLazerSport(
                         .height(48.dp),
                     shape = RoundedCornerShape(RaioBotao),
                 ) {
-                    Text("Entrar")
+                    Text("Entrar", fontWeight = FontWeight.Bold)
                 }
                 TextButton(
                     onClick = { aoEscolher("registro") },
@@ -482,140 +760,8 @@ private fun GavetaLazerSport(
 }
 
 // ============================================================
-// SECOES
+// COMPONENTES DE CONTEUDO
 // ============================================================
-
-@Composable
-private fun Hero(
-    aoVerCatalogo: () -> Unit,
-    aoOrcamento: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .padding(16.dp)
-            .clip(RoundedCornerShape(RaioCard))
-            .background(
-                Brush.linearGradient(listOf(AzulEscuro, Vermelho)),
-            ),
-    ) {
-        Column(
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(24.dp),
-        ) {
-            Text(
-                text = "Diversão que\nmovimenta o seu\nnegócio",
-                style = MaterialTheme.typography.displayLarge,
-                color = Color.White,
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "Locação e venda de brinquedos, arcades e equipamentos.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.9f),
-            )
-            Spacer(Modifier.height(20.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(
-                    onClick = aoVerCatalogo,
-                    shape = RoundedCornerShape(RaioBotao),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = AzulEscuro,
-                    ),
-                ) {
-                    Text("Ver catálogo", fontWeight = FontWeight.Bold)
-                }
-                TextButton(onClick = aoOrcamento) {
-                    Text("Orçamento", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FaixaNumeros() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        listOf(
-            "+20" to "anos de estrada",
-            "+500" to "eventos montados",
-            "100%" to "fabricação própria",
-        ).forEach { (numero, rotulo) ->
-            Card(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(RaioBotao),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = numero,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = rotulo,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TituloSecao(
-    titulo: String,
-    subtitulo: String? = null,
-    acao: String? = null,
-    aoAcao: () -> Unit = {},
-) {
-    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 14.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = titulo,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f),
-            )
-            if (acao != null) {
-                TextButton(onClick = aoAcao) {
-                    Text(acao, style = MaterialTheme.typography.labelLarge)
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            }
-        }
-        if (subtitulo != null) {
-            Text(
-                text = subtitulo,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
 
 @Composable
 private fun BolhaCategoria(
@@ -625,14 +771,15 @@ private fun BolhaCategoria(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(92.dp)
+            .width(94.dp)
             .clickable(onClick = aoClicar),
     ) {
         Box(
             modifier = Modifier
-                .size(76.dp)
+                .size(78.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(Color.White.copy(alpha = 0.07f))
+                .border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             if (categoria.imagemUrl != null) {
@@ -640,21 +787,23 @@ private fun BolhaCategoria(
                     model = categoria.imagemUrl,
                     contentDescription = categoria.nome,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
                 )
             } else {
                 Icon(
                     Icons.Filled.Widgets,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = AzulPill,
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(9.dp))
         Text(
             text = categoria.nome,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = Color.White.copy(alpha = 0.9f),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
@@ -667,8 +816,8 @@ private fun CarrosselItens(
     aoAbrirItem: (Int) -> Unit,
 ) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(horizontal = 22.dp),
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
     ) {
         items(itens, key = { it.id }) { item ->
             CartaoItem(item = item, aoClicar = { aoAbrirItem(item.id) })
@@ -689,7 +838,7 @@ private fun CartaoItem(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         Box {
             AsyncImage(
@@ -710,6 +859,7 @@ private fun CartaoItem(
                         text = item.selo,
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White,
+                        fontWeight = FontWeight.Black,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     )
                 }
@@ -724,6 +874,7 @@ private fun CartaoItem(
                 overflow = TextOverflow.Ellipsis,
             )
             if (item.avaliacao != null) {
+                Spacer(Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.Star,
@@ -740,7 +891,7 @@ private fun CartaoItem(
                 }
             }
             if (item.preco != null) {
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(5.dp))
                 Text(
                     text = item.preco,
                     style = MaterialTheme.typography.titleMedium,
@@ -755,44 +906,48 @@ private fun CartaoItem(
 @Composable
 private fun CarrosselLargo(itens: List<ItemVitrine>) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(horizontal = 22.dp),
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
     ) {
         items(itens, key = { it.id }) { item ->
-            Card(
-                modifier = Modifier.width(280.dp),
-                shape = RoundedCornerShape(RaioCard),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            Box(
+                modifier = Modifier
+                    .width(280.dp)
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(RaioCard))
+                    .background(Color.White.copy(alpha = 0.05f))
+                    .border(
+                        1.dp,
+                        Color.White.copy(alpha = 0.12f),
+                        RoundedCornerShape(RaioCard),
+                    ),
             ) {
-                Box {
-                    AsyncImage(
-                        model = item.imagemUrl,
-                        contentDescription = item.nome,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(170.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(170.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f)),
+                AsyncImage(
+                    model = item.imagemUrl,
+                    contentDescription = item.nome,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color(0xFF050B14).copy(alpha = 0.85f),
                                 ),
                             ),
-                    )
-                    Text(
-                        text = item.nome,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(14.dp),
-                    )
-                }
+                        ),
+                )
+                Text(
+                    text = item.nome,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(15.dp),
+                )
             }
         }
     }
@@ -800,48 +955,55 @@ private fun CarrosselLargo(itens: List<ItemVitrine>) {
 
 @Composable
 private fun FaixaManutencao(aoSolicitar: () -> Unit) {
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 28.dp),
-        shape = RoundedCornerShape(RaioCard),
-        colors = CardDefaults.cardColors(containerColor = AzulEscuro),
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                Icons.Filled.Build,
-                contentDescription = null,
-                tint = Amarelo,
-                modifier = Modifier.size(38.dp),
+            .padding(horizontal = 14.dp)
+            .clip(RoundedCornerShape(RaioSecao))
+            .background(
+                Brush.linearGradient(listOf(Color(0xFF004AAD), Color(0xFF0878F9))),
             )
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = "Precisa de manutenção?",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+            .padding(24.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.Build,
+                    contentDescription = null,
+                    tint = Amarelo,
+                    modifier = Modifier.size(24.dp),
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Assistência técnica para brinquedos e arcades, com peças originais.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.85f),
-                )
-                Spacer(Modifier.height(14.dp))
-                Button(
-                    onClick = aoSolicitar,
-                    shape = RoundedCornerShape(RaioBotao),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Amarelo,
-                        contentColor = AzulEscuro,
-                    ),
-                ) {
-                    Text("Solicitar atendimento", fontWeight = FontWeight.Bold)
-                }
             }
+            Spacer(Modifier.width(14.dp))
+            Text(
+                text = "Precisa de manutenção?",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White,
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Assistência técnica para brinquedos e arcades, " +
+                    "com peças originais e equipe própria.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.85f),
+        )
+        Spacer(Modifier.height(18.dp))
+        Button(
+            onClick = aoSolicitar,
+            shape = RoundedCornerShape(RaioBotao),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Amarelo,
+                contentColor = AzulProfundo,
+            ),
+        ) {
+            Text("Solicitar atendimento", fontWeight = FontWeight.Black)
         }
     }
 }
@@ -851,29 +1013,35 @@ private fun BlocoContato(aoFalarConosco: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp),
+            .padding(horizontal = 14.dp)
+            .clip(RoundedCornerShape(RaioSecao))
+            .fundoSecaoClara()
+            .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Kicker("VISITE", sobreEscuro = false)
+        Spacer(Modifier.height(14.dp))
         Text(
             text = "Venha até a Lazer & Sport",
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = corTituloSecaoClara(),
         )
         Spacer(Modifier.height(8.dp))
         Text(
             text = "Fale com a gente para montar o orçamento do seu evento ou espaço.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = corSubtituloSecaoClara(),
         )
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(20.dp))
         Button(
             onClick = aoFalarConosco,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(RaioBotao),
+            colors = ButtonDefaults.buttonColors(containerColor = AzulEscuro),
         ) {
-            Text("Falar com a equipe", fontWeight = FontWeight.Bold)
+            Text("Falar com a equipe", fontWeight = FontWeight.Black)
         }
     }
 }
@@ -881,8 +1049,6 @@ private fun BlocoContato(aoFalarConosco: () -> Unit) {
 // ============================================================
 // DADOS DE DEMONSTRACAO
 // ============================================================
-// Some com isso quando o MenuViewModel entrar. Existe pra tela abrir
-// bonita mesmo com a API fora do ar.
 
 fun dadosDemo(): ConteudoMenu {
     fun itens(prefixo: String, quantidade: Int, base: Int) =
