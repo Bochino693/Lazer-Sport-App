@@ -17,9 +17,16 @@
 
 package com.example.lazer_sport_app.ui.navigation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +34,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -94,6 +104,7 @@ fun NavegacaoApp(
     sessaoViewModel: SessaoViewModel = hiltViewModel(),
 ) {
     val logado by sessaoViewModel.estaLogado.collectAsState()
+    val uriHandler = LocalUriHandler.current
 
     if (logado == null) {
         Carregando()
@@ -112,7 +123,12 @@ fun NavegacaoApp(
             BemVindoScreen(
                 aoEntrar = { navController.navigate(Rotas.LOGIN) },
                 aoCriarConta = { navController.navigate(Rotas.REGISTRO) },
-                aoVerCatalogo = { navController.navigate(Rotas.CATALOGO) },
+                aoContinuarSemLogin = { navController.navigate(Rotas.CATALOGO) },
+                aoContinuarComGoogle = {
+                    uriHandler.openUri(
+                        "https://www.lazersport.com.br/accounts/google/login/?process=login"
+                    )
+                },
             )
         }
 
@@ -129,9 +145,34 @@ fun NavegacaoApp(
         }
 
         // ---- Placeholders: troque um a um pelas telas reais ----
-        composable(Rotas.MENU) { EmConstrucao("Menu") }
-        composable(Rotas.CATALOGO) { EmConstrucao("Catalogo") }
-        composable(Rotas.REGISTRO) { EmConstrucao("Criar conta") }
+        composable(Rotas.MENU) {
+            EmConstrucao(
+                nome = "Início",
+                mensagem = "Sua sessão está pronta. A próxima entrega conecta o menu aos dados reais do site.",
+                textoAcao = "Abrir o site",
+                aoAcao = { uriHandler.openUri("https://www.lazersport.com.br/") },
+            )
+        }
+        composable(Rotas.CATALOGO) {
+            EmConstrucao(
+                nome = "Catálogo",
+                mensagem = "O catálogo nativo será a próxima tela. Enquanto isso, você já pode ver todos os brinquedos.",
+                textoAcao = "Ver brinquedos agora",
+                aoAcao = {
+                    uriHandler.openUri("https://www.lazersport.com.br/brinquedos/")
+                },
+            )
+        }
+        composable(Rotas.REGISTRO) {
+            EmConstrucao(
+                nome = "Criar conta",
+                mensagem = "O cadastro nativo está sendo preparado para usar a mesma conta do site.",
+                textoAcao = "Cadastrar pelo site",
+                aoAcao = {
+                    uriHandler.openUri("https://www.lazersport.com.br/registrar/")
+                },
+            )
+        }
     }
 }
 
@@ -148,11 +189,39 @@ private fun Carregando() {
 }
 
 @Composable
-private fun EmConstrucao(nome: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
+private fun EmConstrucao(
+    nome: String,
+    mensagem: String,
+    textoAcao: String,
+    aoAcao: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Text("Tela \"$nome\" em construcao")
+        Text(
+            text = nome,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = mensagem,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+        Button(
+            onClick = aoAcao,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+        ) {
+            Text(textoAcao)
+        }
     }
 }
