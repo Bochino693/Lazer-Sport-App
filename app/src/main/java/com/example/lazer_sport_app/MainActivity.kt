@@ -12,6 +12,7 @@
 package com.example.lazer_sport_app
 
 import android.os.Bundle
+import android.view.Surface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import com.example.lazer_sport_app.ui.navigation.NavegacaoApp
 import com.example.lazer_sport_app.ui.theme.LazerSportTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.lang.reflect.Modifier
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
