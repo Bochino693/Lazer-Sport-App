@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="240dp"
+    android:viewportWidth="360"
+    android:viewportHeight="240">
+    <path android:fillColor="@color/ls_azul_escuro" android:pathData="M24,0 H336 Q360,0 360,24 V216 Q360,240 336,240 H24 Q0,240 0,216 V24 Q0,0 24,0 Z" />
+    <path android:fillColor="#14FFFFFF" android:pathData="M18,38 A7,7 0,1 0,32 38 A7,7 0,1 0,18 38 M323,196 A11,11 0,1 0,345 196 A11,11 0,1 0,323 196" />
+    <path android:fillColor="@color/ls_azul" android:fillAlpha="0.30" android:pathData="M0,182 C76,133 135,230 205,178 C264,134 309,143 360,111 V240 H0 Z" />
+    <path android:fillColor="@color/ls_texto" android:pathData="M111,31 H249 L265,190 Q266,205 251,205 H109 Q94,205 95,190 Z" />
+    <path android:fillColor="@color/ls_azul" android:pathData="M126,50 H234 L244,124 H116 Z" />
+    <path android:fillColor="#38FFFFFF" android:pathData="M131,57 H229 L235,106 C208,83 167,78 124,103 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M180,69 A25,25 0,1 0,180 119 A25,25 0,1 0,180 69" />
+    <path android:fillColor="@color/ls_vermelho" android:pathData="M180,77 A17,17 0,1 0,180 111 A17,17 0,1 0,180 77" />
+    <path android:fillColor="#FFFFFF" android:pathData="M180,85 A9,9 0,1 0,180 103 A9,9 0,1 0,180 85" />
+    <path android:fillColor="#F4F6FA" android:pathData="M108,135 H252 L262,171 H98 Z" />
+    <path android:fillColor="@color/ls_vermelho" android:pathData="M141,130 H148 V151 H141 Z M135,126 A10,10 0,1 0,155 126 A10,10 0,1 0,135 126" />
+    <path android:fillColor="@color/ls_azul" android:pathData="M201,150 A8,8 0,1 0,217 150 A8,8 0,1 0,201 150 M224,150 A8,8 0,1 0,240 150 A8,8 0,1 0,224 150" />
+    <path android:fillColor="@color/ls_texto" android:pathData="M112,202 H139 V224 H106 Z M221,202 H248 L254,224 H221 Z" />
+    <path android:fillColor="@color/ls_amarelo" android:pathData="M70,59 L74,69 L85,73 L74,77 L70,88 L66,77 L55,73 L66,69 Z M294,83 L298,91 L306,95 L298,99 L294,107 L290,99 L282,95 L290,91 Z" />
+</vector>

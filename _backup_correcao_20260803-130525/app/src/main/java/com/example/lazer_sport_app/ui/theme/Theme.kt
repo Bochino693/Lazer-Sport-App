@@ -34,15 +34,15 @@ import androidx.core.view.WindowCompat
 // ============================================================
 // CORES DA MARCA
 // ============================================================
-val AzulEscuro = Color(0xFF0758C9)
-val AzulClaro = Color(0xFF0758C9)
-val Vermelho = Color(0xFFE5262B)
+val AzulEscuro = Color(0xFF004AAD)
+val AzulClaro = Color(0xFF007BFF)
+val Vermelho = Color(0xFFE63946)
 val VermelhoEscuro = Color(0xFFC9152D)
 val Amarelo = Color(0xFFFFD700)
-val NoiteProfunda = Color(0xFF172033)
-val NoiteSuave = Color(0xFF082A5E)
-val CinzaClaro = Color(0xFFF6F8FC)
-val Verde = Color(0xFF169B55)
+val NoiteProfunda = Color(0xFF0D1B2E)
+val NoiteSuave = Color(0xFF1B3659)
+val CinzaClaro = Color(0xFFF4F6FA)
+val Verde = Color(0xFF2ECC71)
 
 private val EsquemaClaro = lightColorScheme(
     primary = AzulEscuro,
