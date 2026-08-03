@@ -75,6 +75,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
@@ -142,6 +143,7 @@ private data class ItemGaveta(
     val rotulo: String,
     val icone: ImageVector,
     val rota: String,
+    val cor: Color,
 )
 
 private val BrancoSuave = Color(0xFFF4F8FF)
@@ -165,15 +167,22 @@ fun MenuScreen(
     val escopo = rememberCoroutineScope()
     var abaSelecionada by remember { mutableIntStateOf(0) }
 
+    // Cada item ganha uma cor da marca -- a gaveta deixa de ser uma
+    // lista cinza e passa a ser navegavel de relance.
     val itensGaveta = listOf(
-        ItemGaveta("Início", Icons.Filled.Home, "menu"),
-        ItemGaveta("Brinquedos", Icons.Filled.Widgets, "catalogo"),
-        ItemGaveta("Promoções", Icons.Filled.LocalOffer, "promocoes"),
-        ItemGaveta("Combos", Icons.Filled.Star, "combos"),
-        ItemGaveta("Peças de Reposição", Icons.Filled.Build, "pecas"),
-        ItemGaveta("Manutenções", Icons.Filled.Build, "manutencao"),
-        ItemGaveta("Estabelecimentos", Icons.Filled.Storefront, "estabelecimentos"),
-        ItemGaveta("Eventos", Icons.Filled.CalendarMonth, "eventos"),
+        ItemGaveta("Início", Icons.Filled.Home, "menu", MarcaAzulProfundo),
+        ItemGaveta("Brinquedos", Icons.Filled.Widgets, "catalogo", MarcaAzulVivo),
+        ItemGaveta("Promoções", Icons.Filled.LocalOffer, "promocoes", MarcaRosa),
+        ItemGaveta("Combos", Icons.Filled.Star, "combos", Amarelo),
+        ItemGaveta("Peças de Reposição", Icons.Filled.Build, "pecas", MarcaAzulDardo),
+        ItemGaveta("Manutenções", Icons.Filled.Build, "manutencao", MarcaRosaEscuro),
+        ItemGaveta(
+            "Estabelecimentos",
+            Icons.Filled.Storefront,
+            "estabelecimentos",
+            MarcaAzulVivo,
+        ),
+        ItemGaveta("Eventos", Icons.Filled.CalendarMonth, "eventos", MarcaRosa),
     )
 
     ModalNavigationDrawer(
@@ -193,46 +202,77 @@ fun MenuScreen(
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "LAZER & SPORT",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { escopo.launch { estadoGaveta.open() } }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Abrir menu")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { aoNavegar("busca") }) {
-                            Icon(Icons.Filled.Search, contentDescription = "Buscar")
-                        }
-                        IconButton(onClick = { aoNavegar("carrinho") }) {
-                            BadgedBox(
-                                badge = {
-                                    if (itensNoCarrinho > 0) {
-                                        Badge(containerColor = Vermelho) {
-                                            Text("$itensNoCarrinho")
-                                        }
-                                    }
-                                },
+                // O Box carrega o degrade azul; a TopAppBar fica
+                // transparente por cima. E o unico jeito de ter
+                // degrade no cabecalho -- containerColor so aceita
+                // cor solida.
+                Box(modifier = Modifier.fundoHero()) {
+                    TopAppBar(
+                        title = {
+                            LogoComNome(
+                                tamanhoSimbolo = 34.dp,
+                                sobreEscuro = true,
+                                mostrarAssinatura = true,
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = { escopo.launch { estadoGaveta.open() } },
                             ) {
                                 Icon(
-                                    Icons.Filled.ShoppingCart,
-                                    contentDescription = "Carrinho",
+                                    Icons.Filled.Menu,
+                                    contentDescription = "Abrir menu",
+                                    tint = Color.White,
                                 )
                             }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                    ),
-                )
+                        },
+                        actions = {
+                            Row(
+                                horizontalArrangement = EspacoIcones,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                FundoIcone {
+                                    IconButton(onClick = { aoNavegar("busca") }) {
+                                        Icon(
+                                            Icons.Filled.Search,
+                                            contentDescription = "Buscar",
+                                            tint = MarcaAzulDardo,
+                                        )
+                                    }
+                                }
+                                FundoIcone(
+                                    corFundo = MarcaRosa.copy(alpha = 0.22f),
+                                ) {
+                                    IconButton(onClick = { aoNavegar("carrinho") }) {
+                                        BadgedBox(
+                                            badge = {
+                                                if (itensNoCarrinho > 0) {
+                                                    Badge(
+                                                        containerColor = MarcaRosa,
+                                                        contentColor = Color.White,
+                                                    ) {
+                                                        Text("$itensNoCarrinho")
+                                                    }
+                                                }
+                                            },
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.ShoppingCart,
+                                                contentDescription = "Carrinho",
+                                                tint = Color.White,
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.width(6.dp))
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = Color.White,
+                        ),
+                    )
+                }
             },
             bottomBar = {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
@@ -251,6 +291,15 @@ fun MenuScreen(
                             },
                             icon = { Icon(icone, contentDescription = rotulo) },
                             label = { Text(rotulo) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color.White,
+                                selectedTextColor = MarcaAzulProfundo,
+                                indicatorColor = MarcaAzulProfundo,
+                                unselectedIconColor =
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor =
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                         )
                     }
                 }
@@ -691,13 +740,8 @@ private fun GavetaLazerSport(
                     .align(Alignment.BottomStart)
                     .padding(20.dp),
             ) {
-                Text(
-                    text = "LAZER & SPORT",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.ExtraBold,
-                )
-                Spacer(Modifier.height(2.dp))
+                LogoCompleta(largura = 186.dp)
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = "Brinquedos e diversão para o seu espaço",
                     style = MaterialTheme.typography.bodyMedium,
@@ -710,8 +754,23 @@ private fun GavetaLazerSport(
 
         itens.forEach { item ->
             NavigationDrawerItem(
-                label = { Text(item.rotulo) },
-                icon = { Icon(item.icone, contentDescription = null) },
+                label = { Text(item.rotulo, fontWeight = FontWeight.SemiBold) },
+                icon = {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(11.dp))
+                            .background(item.cor.copy(alpha = 0.13f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            item.icone,
+                            contentDescription = null,
+                            tint = item.cor,
+                            modifier = Modifier.size(19.dp),
+                        )
+                    }
+                },
                 selected = false,
                 onClick = { aoEscolher(item.rota) },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
