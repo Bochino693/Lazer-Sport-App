@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Sem isto, toda chamada de rede falha com SecurityException -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -19,32 +18,27 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
-        <!--
-            usesCleartextTraffic permite HTTP puro. É necessário só pra
-            falar com o Django rodando local (http://10.0.2.2:8000).
-            ANTES DE PUBLICAR NA PLAY STORE, remova esta linha: em
-            produção tudo passa por HTTPS e deixar isso ligado é uma
-            porta aberta desnecessária.
-        -->
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.LazerSportApp">
+            android:theme="@style/Theme.LazerSport_APP">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Retorno do login social: lazersport://auth?token=... -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="lazersport" android:host="auth" />
+
+                <data
+                    android:host="auth"
+                    android:scheme="lazersport" />
             </intent-filter>
+
         </activity>
 
     </application>
