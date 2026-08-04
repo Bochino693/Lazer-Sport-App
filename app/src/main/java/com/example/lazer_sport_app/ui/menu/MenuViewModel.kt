@@ -1,16 +1,8 @@
-// Busca o conteudo da home e entrega pro MenuScreen.
-//
-// O CatalogoRepository saiu daqui e foi pro data/Network.kt: agora
-// catalogo, pecas, eventos e estabelecimentos usam o mesmo repositorio,
-// e nao fazia sentido ele morar dentro do ViewModel de uma tela.
-//
-// FALLBACK VISIVEL: com a API fora do ar a tela abre com dados de
-// demonstracao e um aviso, em vez de tela vazia sem explicacao.
-
 package com.example.lazer_sport_app.ui.menu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lazer_sport_app.data.CarrinhoRepository
 import com.example.lazer_sport_app.data.CatalogoRepository
 import com.example.lazer_sport_app.ui.components.CategoriaVitrine
 import com.example.lazer_sport_app.ui.components.ConteudoMenu
@@ -26,13 +18,13 @@ import kotlinx.coroutines.launch
 data class EstadoMenu(
     val carregando: Boolean = true,
     val conteudo: ConteudoMenu = ConteudoMenu(),
-    /** Preenchido quando NADA veio da rede -- a tela mostra demo. */
     val avisoOffline: String? = null,
 )
 
 @HiltViewModel
 class MenuViewModel @Inject constructor(
     private val repositorio: CatalogoRepository,
+    private val carrinho: CarrinhoRepository,
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(EstadoMenu())
@@ -44,20 +36,39 @@ class MenuViewModel @Inject constructor(
 
     fun carregar() {
         viewModelScope.launch {
-            _estado.update { it.copy(carregando = true, avisoOffline = null) }
+            _estado.update {
+                it.copy(
+                    carregando = true,
+                    avisoOffline = null,
+                )
+            }
 
-            val vindo = runCatching { repositorio.carregarMenu() }
-                .getOrDefault(ConteudoMenu())
+            val resultado = runCatching {
+                repositorio.carregarMenu()
+            }
 
-            val vazio = vindo.categorias.isEmpty() && vindo.destaques.isEmpty()
+            val conteudoRecebido = resultado.getOrDefault(ConteudoMenu())
+
+            val semConteudo =
+                conteudoRecebido.categorias.isEmpty() &&
+                        conteudoRecebido.promocoes.isEmpty() &&
+                        conteudoRecebido.destaques.isEmpty() &&
+                        conteudoRecebido.pecas.isEmpty() &&
+                        conteudoRecebido.combos.isEmpty() &&
+                        conteudoRecebido.estabelecimentos.isEmpty() &&
+                        conteudoRecebido.eventos.isEmpty()
 
             _estado.update {
                 it.copy(
                     carregando = false,
-                    conteudo = if (vazio) dadosDemo() else vindo,
-                    avisoOffline = if (vazio) {
-                        "Não foi possível carregar o catálogo agora. " +
-                                "Mostrando conteúdo de exemplo."
+                    conteudo = if (semConteudo) {
+                        dadosDemonstracao()
+                    } else {
+                        conteudoRecebido
+                    },
+                    avisoOffline = if (semConteudo) {
+                        "Não foi possível atualizar o catálogo. " +
+                                "Mostrando conteúdo temporário."
                     } else {
                         null
                     },
@@ -65,32 +76,76 @@ class MenuViewModel @Inject constructor(
             }
         }
     }
+
+    fun adicionarAoCarrinho(item: ItemVitrine) {
+        if (item.demonstracao) return
+        if (!item.disponivelParaCompra) return
+        if (item.preco.isNullOrBlank()) return
+
+        viewModelScope.launch {
+            carrinho.adicionar(item)
+        }
+    }
 }
 
-/** Conteudo de demonstracao usado quando a API nao responde. */
-fun dadosDemo(): ConteudoMenu {
-    fun itens(prefixo: String, quantidade: Int, base: Int) =
-        (1..quantidade).map { indice ->
+private fun dadosDemonstracao(): ConteudoMenu {
+    fun criarItens(
+        prefixo: String,
+        quantidade: Int,
+        base: Int,
+    ): List<ItemVitrine> {
+        return (1..quantidade).map { indice ->
             ItemVitrine(
                 id = base + indice,
                 nome = "$prefixo $indice",
-                preco = "R$ ${(indice * 137) + 290},00",
-                avaliacao = "4,${5 + (indice % 5)}",
-                selo = if (indice == 1) "NOVO" else null,
+                demonstracao = true,
             )
         }
+    }
 
     return ConteudoMenu(
         categorias = listOf(
-            "Infláveis", "Arcades", "Mesas", "Simuladores", "Kids", "Radicais",
-        ).mapIndexed { indice, nome -> CategoriaVitrine(indice + 1, nome) },
-        promocoes = itens("Promoção", 5, 100),
-        destaques = itens("Brinquedo", 6, 200),
-        pecas = itens("Peça", 5, 300),
-        combos = itens("Combo", 4, 400),
-        estabelecimentos = (1..4).map {
-            ItemVitrine(500 + it, "Estabelecimento parceiro $it")
+            "Arcades",
+            "Mesas",
+            "Simuladores",
+            "Kids",
+            "Competitivos",
+            "Parques",
+        ).mapIndexed { indice, nome ->
+            CategoriaVitrine(
+                id = indice + 1,
+                nome = nome,
+            )
         },
-        eventos = (1..4).map { ItemVitrine(600 + it, "Evento realizado $it") },
+        promocoes = criarItens(
+            prefixo = "Promoção",
+            quantidade = 5,
+            base = 100,
+        ),
+        destaques = criarItens(
+            prefixo = "Brinquedo",
+            quantidade = 6,
+            base = 200,
+        ),
+        pecas = criarItens(
+            prefixo = "Peça de reposição",
+            quantidade = 5,
+            base = 300,
+        ),
+        combos = criarItens(
+            prefixo = "Combo",
+            quantidade = 4,
+            base = 400,
+        ),
+        estabelecimentos = criarItens(
+            prefixo = "Estabelecimento parceiro",
+            quantidade = 4,
+            base = 500,
+        ),
+        eventos = criarItens(
+            prefixo = "Evento realizado",
+            quantidade = 4,
+            base = 600,
+        ),
     )
 }

@@ -1,13 +1,3 @@
-// TELA PRINCIPAL -- espelha a home do lazersport.com.br.
-//
-// Passou de 1138 pra ~330 linhas: gaveta foi pra GavetaMenu.kt, modelos
-// e cartoes pra ui/components.
-//
-// RITMO VISUAL (agora sem nenhum bloco claro):
-//   hero -> escuro -> azul-aco -> escuro -> faixa azul -> azul-aco ->
-//   escuro -> azul-aco -> escuro -> faixa rosa
-// A alternancia e o que da o ritmo que antes vinha do branco.
-
 package com.example.lazer_sport_app.ui.menu
 
 import androidx.compose.foundation.clickable
@@ -40,7 +30,6 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
@@ -61,16 +50,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.lazer_sport_app.data.Contato
 import com.example.lazer_sport_app.data.FonteLista
+import com.example.lazer_sport_app.data.SaudeApi
 import com.example.lazer_sport_app.ui.components.BolhaCategoria
 import com.example.lazer_sport_app.ui.components.BotaoPrincipal
 import com.example.lazer_sport_app.ui.components.CarrosselItens
 import com.example.lazer_sport_app.ui.components.CarrosselLargo
 import com.example.lazer_sport_app.ui.components.ConteudoMenu
+import com.example.lazer_sport_app.ui.components.ItemVitrine
 import com.example.lazer_sport_app.ui.components.Kicker
 import com.example.lazer_sport_app.ui.components.SecaoAzul
 import com.example.lazer_sport_app.ui.components.SecaoEscura
@@ -78,27 +72,52 @@ import com.example.lazer_sport_app.ui.theme.Amarelo
 import com.example.lazer_sport_app.ui.theme.AzulDardo
 import com.example.lazer_sport_app.ui.theme.AzulPastel
 import com.example.lazer_sport_app.ui.theme.AzulVivo
+import com.example.lazer_sport_app.ui.theme.Esqueleto
+import com.example.lazer_sport_app.ui.theme.EsqueletoCartao
+import com.example.lazer_sport_app.ui.theme.EsqueletoLargo
 import com.example.lazer_sport_app.ui.theme.NoiteMeio
 import com.example.lazer_sport_app.ui.theme.RaioBotao
 import com.example.lazer_sport_app.ui.theme.RaioSecao
 import com.example.lazer_sport_app.ui.theme.RosaMarca
 import com.example.lazer_sport_app.ui.theme.TextoFraco
 import com.example.lazer_sport_app.ui.theme.TextoMedio
+import com.example.lazer_sport_app.ui.theme.brilhoCarregando
+import com.example.lazer_sport_app.ui.theme.tocavel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
     conteudo: ConteudoMenu,
+    carregando: Boolean = false,
     itensNoCarrinho: Int = 0,
     estaLogado: Boolean = false,
     nomeUsuario: String? = null,
+    saudeApi: SaudeApi = SaudeApi.COMPLETA,
+    recursosDisponiveis: Set<String> = emptySet(),
     aoNavegar: (String) -> Unit = {},
     aoAbrirItem: (Int) -> Unit = {},
+    aoAdicionarCarrinho: (ItemVitrine) -> Unit = {},
 ) {
     val estadoGaveta = rememberDrawerState(DrawerValue.Closed)
     val escopo = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
     var abaSelecionada by remember { mutableIntStateOf(0) }
+
+    fun recursoDisponivel(recurso: String): Boolean {
+        return saudeApi == SaudeApi.FORA ||
+                recursosDisponiveis.isEmpty() ||
+                recurso in recursosDisponiveis
+    }
+
+    fun consultarPreco(item: ItemVitrine) {
+        uriHandler.openUri(
+            Contato.whatsapp(
+                "Olá! Vi ${item.nome} no aplicativo da Lazer & Sport " +
+                        "e gostaria de consultar o preço."
+            )
+        )
+    }
 
     ModalNavigationDrawer(
         drawerState = estadoGaveta,
@@ -107,72 +126,76 @@ fun MenuScreen(
             GavetaLazerSport(
                 estaLogado = estaLogado,
                 nomeUsuario = nomeUsuario,
+                itensNoCarrinho = itensNoCarrinho,
+                saudeApi = saudeApi,
+                recursosDisponiveis = recursosDisponiveis,
                 aoEscolher = { rota ->
-                    escopo.launch { estadoGaveta.close() }
-                    if (rota != ROTA_MENU) aoNavegar(rota)
+                    escopo.launch {
+                        estadoGaveta.close()
+                    }
+
+                    if (rota != ROTA_MENU) {
+                        aoNavegar(rota)
+                    }
                 },
-                aoFechar = { escopo.launch { estadoGaveta.close() } },
+                aoFechar = {
+                    escopo.launch {
+                        estadoGaveta.close()
+                    }
+                },
             )
         },
     ) {
         Scaffold(
-            // Transparente: o LazyColumn abaixo pinta o fundoNoite.
             containerColor = Color.Transparent,
             topBar = {
-                // O Box carrega o degrade; a TopAppBar fica transparente
-                // por cima. containerColor so aceita cor solida.
                 Box(modifier = Modifier.fundoHero()) {
                     TopAppBar(
                         title = {
-                            LogoComNome(tamanhoSimbolo = 34.dp, mostrarAssinatura = true)
+                            LogoComNome(
+                                tamanhoSimbolo = 34.dp,
+                                mostrarAssinatura = true,
+                            )
                         },
                         navigationIcon = {
-                            IconButton(onClick = { escopo.launch { estadoGaveta.open() } }) {
-                                Icon(
-                                    Icons.Filled.Menu,
-                                    contentDescription = "Abrir menu",
-                                    tint = Color.White,
-                                )
-                            }
+                            BotaoCabecalho(
+                                icone = Icons.Filled.Menu,
+                                descricao = "Abrir menu",
+                                cor = AzulDardo,
+                                aoClicar = {
+                                    escopo.launch {
+                                        estadoGaveta.open()
+                                    }
+                                },
+                                modifier = Modifier.padding(start = 6.dp),
+                            )
                         },
                         actions = {
                             Row(
                                 horizontalArrangement = EspacoIcones,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                FundoIcone(corFundo = AzulDardo.copy(alpha = 0.18f)) {
-                                    IconButton(
-                                        onClick = {
-                                            aoNavegar(rotaLista(FonteLista.BRINQUEDOS))
-                                        },
-                                    ) {
-                                        Icon(
-                                            Icons.Filled.Search,
-                                            contentDescription = "Buscar",
-                                            tint = AzulDardo,
+                                BotaoCabecalho(
+                                    icone = Icons.Filled.Search,
+                                    descricao = "Buscar no catálogo",
+                                    cor = AzulDardo,
+                                    aoClicar = {
+                                        aoNavegar(
+                                            rotaLista(FonteLista.BRINQUEDOS)
                                         )
-                                    }
-                                }
-                                FundoIcone(corFundo = RosaMarca.copy(alpha = 0.22f)) {
-                                    IconButton(onClick = { aoNavegar(ROTA_CARRINHO) }) {
-                                        BadgedBox(
-                                            badge = {
-                                                if (itensNoCarrinho > 0) {
-                                                    Badge(
-                                                        containerColor = RosaMarca,
-                                                        contentColor = Color.White,
-                                                    ) { Text("$itensNoCarrinho") }
-                                                }
-                                            },
-                                        ) {
-                                            Icon(
-                                                Icons.Filled.ShoppingCart,
-                                                contentDescription = "Carrinho",
-                                                tint = Color.White,
-                                            )
-                                        }
-                                    }
-                                }
+                                    },
+                                )
+
+                                BotaoCabecalho(
+                                    icone = Icons.Filled.ShoppingCart,
+                                    descricao = "Abrir carrinho",
+                                    cor = RosaMarca,
+                                    contador = itensNoCarrinho,
+                                    aoClicar = {
+                                        aoNavegar(ROTA_CARRINHO)
+                                    },
+                                )
+
                                 Spacer(Modifier.width(6.dp))
                             }
                         },
@@ -184,26 +207,55 @@ fun MenuScreen(
                 }
             },
             bottomBar = {
-                NavigationBar(containerColor = NoiteMeio) {
+                NavigationBar(
+                    containerColor = NoiteMeio,
+                ) {
                     val abas = listOf(
-                        Triple("Início", Icons.Filled.Home, ROTA_MENU),
+                        Triple(
+                            "Início",
+                            Icons.Filled.Home,
+                            ROTA_MENU,
+                        ),
                         Triple(
                             "Catálogo",
                             Icons.Filled.Widgets,
                             rotaLista(FonteLista.BRINQUEDOS),
                         ),
-                        Triple("Carrinho", Icons.Filled.ShoppingCart, ROTA_CARRINHO),
-                        Triple("Conta", Icons.Filled.Person, ROTA_CONTA),
+                        Triple(
+                            "Carrinho",
+                            Icons.Filled.ShoppingCart,
+                            ROTA_CARRINHO,
+                        ),
+                        Triple(
+                            "Conta",
+                            Icons.Filled.Person,
+                            ROTA_CONTA,
+                        ),
                     )
-                    abas.forEachIndexed { indice, (rotulo, icone, rota) ->
+
+                    abas.forEachIndexed { indice, item ->
+                        val rotulo = item.first
+                        val icone = item.second
+                        val rota = item.third
+
                         NavigationBarItem(
                             selected = abaSelecionada == indice,
                             onClick = {
                                 abaSelecionada = indice
-                                if (rota != ROTA_MENU) aoNavegar(rota)
+
+                                if (rota != ROTA_MENU) {
+                                    aoNavegar(rota)
+                                }
                             },
-                            icon = { Icon(icone, contentDescription = rotulo) },
-                            label = { Text(rotulo) },
+                            icon = {
+                                Icon(
+                                    imageVector = icone,
+                                    contentDescription = rotulo,
+                                )
+                            },
+                            label = {
+                                Text(rotulo)
+                            },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color.White,
                                 selectedTextColor = AzulPastel,
@@ -216,7 +268,6 @@ fun MenuScreen(
                 }
             },
         ) { padding ->
-
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -225,201 +276,471 @@ fun MenuScreen(
                 contentPadding = PaddingValues(bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-
                 item {
                     Hero(
-                        aoVerCatalogo = { aoNavegar(rotaLista(FonteLista.BRINQUEDOS)) },
-                        aoOrcamento = { aoNavegar(ROTA_CONTATO) },
+                        aoVerCatalogo = {
+                            aoNavegar(
+                                rotaLista(FonteLista.BRINQUEDOS)
+                            )
+                        },
+                        aoOrcamento = {
+                            aoNavegar(ROTA_CONTATO)
+                        },
                     )
                 }
 
-                if (conteudo.categorias.isNotEmpty()) {
+                if (
+                    recursoDisponivel("categorias") &&
+                    (carregando || conteudo.categorias.isNotEmpty())
+                ) {
                     item {
                         SecaoEscura(
                             kicker = "CATEGORIAS",
                             titulo = "Encontre pela categoria",
                             subtitulo = "Escolha o tipo de diversão para o seu espaço",
                         ) {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 22.dp),
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            if (
+                                carregando &&
+                                conteudo.categorias.isEmpty()
                             ) {
-                                items(conteudo.categorias, key = { it.id }) { categoria ->
-                                    BolhaCategoria(
-                                        categoria = categoria,
-                                        aoClicar = {
-                                            aoNavegar(
-                                                rotaLista(
-                                                    FonteLista.BRINQUEDOS,
-                                                    categoria.id,
+                                EsqueletoCategorias()
+                            } else {
+                                LazyRow(
+                                    contentPadding = PaddingValues(
+                                        horizontal = 22.dp
+                                    ),
+                                    horizontalArrangement =
+                                        Arrangement.spacedBy(14.dp),
+                                ) {
+                                    items(
+                                        items = conteudo.categorias,
+                                        key = { it.id },
+                                    ) { categoria ->
+                                        BolhaCategoria(
+                                            categoria = categoria,
+                                            aoClicar = {
+                                                aoNavegar(
+                                                    rotaLista(
+                                                        fonte = FonteLista.BRINQUEDOS,
+                                                        filtro = categoria.id,
+                                                    )
                                                 )
-                                            )
-                                        },
-                                    )
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                if (conteudo.promocoes.isNotEmpty()) {
+                if (
+                    recursoDisponivel("promocoes") &&
+                    (carregando || conteudo.promocoes.isNotEmpty())
+                ) {
                     item {
                         SecaoAzul(
                             kicker = "OFERTAS",
                             titulo = "Promoções",
                             subtitulo = "Condições especiais por tempo limitado",
                             acao = "Ver todas",
-                            aoAcao = { aoNavegar(rotaLista(FonteLista.PROMOCOES)) },
+                            aoAcao = {
+                                aoNavegar(
+                                    rotaLista(FonteLista.PROMOCOES)
+                                )
+                            },
                             corKicker = RosaMarca,
                         ) {
-                            CarrosselItens(conteudo.promocoes, aoAbrirItem)
+                            ConteudoCarrossel(
+                                carregando = carregando,
+                                itens = conteudo.promocoes,
+                                aoAbrirItem = aoAbrirItem,
+                                aoAdicionarCarrinho = aoAdicionarCarrinho,
+                                aoConsultarPreco = ::consultarPreco,
+                            )
                         }
                     }
                 }
 
-                if (conteudo.destaques.isNotEmpty()) {
+                if (
+                    recursoDisponivel("brinquedos") &&
+                    (carregando || conteudo.destaques.isNotEmpty())
+                ) {
                     item {
                         SecaoEscura(
                             kicker = "MAIS PROCURADOS",
-                            titulo = "Brinquedos em Destaque",
+                            titulo = "Brinquedos em destaque",
                             subtitulo = "Os campeões de festas, eventos e parques",
                             acao = "Ver catálogo",
-                            aoAcao = { aoNavegar(rotaLista(FonteLista.BRINQUEDOS)) },
+                            aoAcao = {
+                                aoNavegar(
+                                    rotaLista(FonteLista.BRINQUEDOS)
+                                )
+                            },
                         ) {
-                            CarrosselItens(conteudo.destaques, aoAbrirItem)
+                            ConteudoCarrossel(
+                                carregando = carregando,
+                                itens = conteudo.destaques,
+                                aoAbrirItem = aoAbrirItem,
+                                aoAdicionarCarrinho = aoAdicionarCarrinho,
+                                aoConsultarPreco = ::consultarPreco,
+                            )
                         }
                     }
                 }
 
-                item { FaixaManutencao(aoSolicitar = { aoNavegar(ROTA_MANUTENCAO) }) }
+                if (recursoDisponivel("manutencoes")) {
+                    item {
+                        FaixaManutencao(
+                            aoSolicitar = {
+                                aoNavegar(ROTA_MANUTENCAO)
+                            }
+                        )
+                    }
+                }
 
-                if (conteudo.pecas.isNotEmpty()) {
+                if (
+                    recursoDisponivel("pecas") &&
+                    (carregando || conteudo.pecas.isNotEmpty())
+                ) {
                     item {
                         SecaoAzul(
                             kicker = "ASSISTÊNCIA",
-                            titulo = "Peças de Reposição",
+                            titulo = "Peças de reposição",
                             subtitulo = "Componentes originais para o seu equipamento",
                             acao = "Ver todas",
-                            aoAcao = { aoNavegar(rotaLista(FonteLista.PECAS)) },
+                            aoAcao = {
+                                aoNavegar(
+                                    rotaLista(FonteLista.PECAS)
+                                )
+                            },
                         ) {
-                            CarrosselItens(conteudo.pecas, aoAbrirItem)
+                            ConteudoCarrossel(
+                                carregando = carregando,
+                                itens = conteudo.pecas,
+                                aoAbrirItem = aoAbrirItem,
+                                aoAdicionarCarrinho = aoAdicionarCarrinho,
+                                aoConsultarPreco = ::consultarPreco,
+                            )
                         }
                     }
                 }
 
-                if (conteudo.combos.isNotEmpty()) {
+                if (
+                    recursoDisponivel("combos") &&
+                    (carregando || conteudo.combos.isNotEmpty())
+                ) {
                     item {
                         SecaoEscura(
                             kicker = "PACOTES",
                             titulo = "Combos",
                             subtitulo = "Montados com o melhor custo-benefício",
                             acao = "Ver combos",
-                            aoAcao = { aoNavegar(rotaLista(FonteLista.COMBOS)) },
+                            aoAcao = {
+                                aoNavegar(
+                                    rotaLista(FonteLista.COMBOS)
+                                )
+                            },
                             corKicker = Amarelo,
                         ) {
-                            CarrosselItens(conteudo.combos, aoAbrirItem)
+                            ConteudoCarrossel(
+                                carregando = carregando,
+                                itens = conteudo.combos,
+                                aoAbrirItem = aoAbrirItem,
+                                aoAdicionarCarrinho = aoAdicionarCarrinho,
+                                aoConsultarPreco = ::consultarPreco,
+                            )
                         }
                     }
                 }
 
-                if (conteudo.estabelecimentos.isNotEmpty()) {
+                if (
+                    recursoDisponivel("estabelecimentos") &&
+                    (
+                            carregando ||
+                                    conteudo.estabelecimentos.isNotEmpty()
+                            )
+                ) {
                     item {
                         SecaoAzul(
                             kicker = "PARCEIROS",
                             titulo = "Onde nossos brinquedos estão",
-                            subtitulo = "Parques, buffets e espaços que confiam na gente",
+                            subtitulo = "Espaços que confiam na Lazer & Sport",
                             acao = "Ver todos",
-                            aoAcao = { aoNavegar(rotaLista(FonteLista.ESTABELECIMENTOS)) },
+                            aoAcao = {
+                                aoNavegar(
+                                    rotaLista(
+                                        FonteLista.ESTABELECIMENTOS
+                                    )
+                                )
+                            },
                         ) {
-                            CarrosselLargo(conteudo.estabelecimentos)
+                            ConteudoCarrosselLargo(
+                                carregando = carregando,
+                                itens = conteudo.estabelecimentos,
+                            )
                         }
                     }
                 }
 
-                if (conteudo.eventos.isNotEmpty()) {
+                if (
+                    recursoDisponivel("eventos") &&
+                    (carregando || conteudo.eventos.isNotEmpty())
+                ) {
                     item {
                         SecaoEscura(
                             kicker = "PORTFÓLIO",
-                            titulo = "Eventos Realizados",
+                            titulo = "Eventos realizados",
                             subtitulo = "Um pouco do que já montamos por aí",
                             acao = "Ver todos",
-                            aoAcao = { aoNavegar(rotaLista(FonteLista.EVENTOS)) },
+                            aoAcao = {
+                                aoNavegar(
+                                    rotaLista(FonteLista.EVENTOS)
+                                )
+                            },
                             corKicker = RosaMarca,
                         ) {
-                            CarrosselLargo(conteudo.eventos)
+                            ConteudoCarrosselLargo(
+                                carregando = carregando,
+                                itens = conteudo.eventos,
+                            )
                         }
                     }
                 }
 
-                item { FaixaContato(aoFalarConosco = { aoNavegar(ROTA_CONTATO) }) }
+                item {
+                    FaixaContato(
+                        aoFalarConosco = {
+                            aoNavegar(ROTA_CONTATO)
+                        }
+                    )
+                }
             }
         }
     }
 }
 
-// ============ HERO ============
+@Composable
+private fun BotaoCabecalho(
+    icone: ImageVector,
+    descricao: String,
+    cor: Color,
+    aoClicar: () -> Unit,
+    modifier: Modifier = Modifier,
+    contador: Int = 0,
+) {
+    Box(
+        modifier = modifier
+            .size(44.dp)
+            .tocavel(
+                aoClicar = aoClicar,
+                raio = 14.dp,
+                corRealce = cor,
+                escalaMinima = 0.93f,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        BadgedBox(
+            badge = {
+                if (contador > 0) {
+                    Badge(
+                        containerColor = RosaMarca,
+                        contentColor = Color.White,
+                    ) {
+                        Text(
+                            contador
+                                .coerceAtMost(99)
+                                .toString()
+                        )
+                    }
+                }
+            },
+        ) {
+            Icon(
+                imageVector = icone,
+                contentDescription = descricao,
+                tint = if (cor == AzulDardo) {
+                    AzulPastel
+                } else {
+                    Color.White
+                },
+                modifier = Modifier.size(22.dp),
+            )
+        }
+    }
+}
 
 @Composable
-private fun Hero(aoVerCatalogo: () -> Unit, aoOrcamento: () -> Unit) {
+private fun EsqueletoCategorias() {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 22.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        items(5) {
+            Column(
+                modifier = Modifier.width(94.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    Modifier
+                        .size(78.dp)
+                        .brilhoCarregando(39.dp)
+                )
+
+                Spacer(Modifier.height(9.dp))
+
+                Esqueleto(
+                    altura = 12.dp,
+                    largura = 68.dp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConteudoCarrossel(
+    carregando: Boolean,
+    itens: List<ItemVitrine>,
+    aoAbrirItem: (Int) -> Unit,
+    aoAdicionarCarrinho: (ItemVitrine) -> Unit,
+    aoConsultarPreco: (ItemVitrine) -> Unit,
+) {
+    if (carregando && itens.isEmpty()) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 22.dp),
+            horizontalArrangement = Arrangement.spacedBy(13.dp),
+        ) {
+            items(4) {
+                EsqueletoCartao()
+            }
+        }
+    } else {
+        CarrosselItens(
+            itens = itens,
+            aoAbrirItem = aoAbrirItem,
+            aoAdicionarCarrinho = aoAdicionarCarrinho,
+            aoConsultarPreco = aoConsultarPreco,
+        )
+    }
+}
+
+@Composable
+private fun ConteudoCarrosselLargo(
+    carregando: Boolean,
+    itens: List<ItemVitrine>,
+) {
+    if (carregando && itens.isEmpty()) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 22.dp),
+            horizontalArrangement = Arrangement.spacedBy(13.dp),
+        ) {
+            items(3) {
+                EsqueletoLargo()
+            }
+        }
+    } else {
+        CarrosselLargo(
+            itens = itens,
+        )
+    }
+}
+
+@Composable
+private fun Hero(
+    aoVerCatalogo: () -> Unit,
+    aoOrcamento: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .fundoHero()
-            .padding(horizontal = 24.dp, vertical = 38.dp),
+            .padding(
+                horizontal = 24.dp,
+                vertical = 38.dp,
+            ),
     ) {
         Kicker("LAZER & SPORT BRINQUEDOS")
+
         Spacer(Modifier.height(18.dp))
+
         Text(
             text = "Diversão que\nmovimenta o seu\nnegócio",
             style = MaterialTheme.typography.displayLarge,
             color = Color.White,
             lineHeight = 40.sp,
         )
+
         Spacer(Modifier.height(14.dp))
+
         Text(
-            text = "Locação e venda de brinquedos, arcades e equipamentos, " +
-                    "com fabricação própria e assistência técnica.",
+            text = "Projetos, fabricação e venda de brinquedos, " +
+                    "arcades e equipamentos, com assistência técnica especializada.",
             style = MaterialTheme.typography.bodyMedium,
             color = TextoMedio,
         )
+
         Spacer(Modifier.height(24.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             BotaoPrincipal(
                 texto = "Ver catálogo",
                 aoClicar = aoVerCatalogo,
                 cor = RosaMarca,
                 modifier = Modifier.weight(1f),
             )
+
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(54.dp)
-                    .vidro(raio = RaioBotao, intensidade = 0.10f)
+                    .vidro(
+                        raio = RaioBotao,
+                        intensidade = 0.10f,
+                    )
                     .clickable(onClick = aoOrcamento),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Orçamento", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Orçamento",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
 
         Spacer(Modifier.height(28.dp))
+
         FaixaNumeros()
     }
 }
 
 @Composable
 private fun FaixaNumeros() {
-    Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
         listOf(
             "+20" to "anos de estrada",
             "+500" to "eventos montados",
             "100%" to "fabricação própria",
-        ).forEach { (numero, rotulo) ->
+        ).forEach { item ->
+            val numero = item.first
+            val rotulo = item.second
+
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .vidro(raio = 16.dp, intensidade = 0.08f)
-                    .padding(vertical = 14.dp, horizontal = 8.dp),
+                    .vidro(
+                        raio = 16.dp,
+                        intensidade = 0.08f,
+                    )
+                    .padding(
+                        vertical = 14.dp,
+                        horizontal = 8.dp,
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -428,7 +749,9 @@ private fun FaixaNumeros() {
                     color = AzulPastel,
                     fontWeight = FontWeight.Black,
                 )
+
                 Spacer(Modifier.height(2.dp))
+
                 Text(
                     text = rotulo,
                     style = MaterialTheme.typography.labelSmall,
@@ -442,10 +765,10 @@ private fun FaixaNumeros() {
     }
 }
 
-// ============ FAIXAS DE ACAO ============
-
 @Composable
-private fun FaixaManutencao(aoSolicitar: () -> Unit) {
+private fun FaixaManutencao(
+    aoSolicitar: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -454,35 +777,46 @@ private fun FaixaManutencao(aoSolicitar: () -> Unit) {
             .fundoFaixaAzul()
             .padding(24.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Box(
                 modifier = Modifier
                     .size(46.dp)
-                    .vidro(raio = 14.dp, intensidade = 0.18f),
+                    .vidro(
+                        raio = 14.dp,
+                        intensidade = 0.18f,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Filled.Build,
+                    imageVector = Icons.Filled.Build,
                     contentDescription = null,
                     tint = Amarelo,
                     modifier = Modifier.size(24.dp),
                 )
             }
+
             Spacer(Modifier.width(14.dp))
+
             Text(
                 text = "Precisa de manutenção?",
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.White,
             )
         }
+
         Spacer(Modifier.height(12.dp))
+
         Text(
             text = "Assistência técnica para brinquedos e arcades, " +
                     "com peças originais e equipe própria.",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.88f),
         )
+
         Spacer(Modifier.height(18.dp))
+
         BotaoPrincipal(
             texto = "Solicitar atendimento",
             aoClicar = aoSolicitar,
@@ -493,32 +827,46 @@ private fun FaixaManutencao(aoSolicitar: () -> Unit) {
 }
 
 @Composable
-private fun FaixaContato(aoFalarConosco: () -> Unit) {
+private fun FaixaContato(
+    aoFalarConosco: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp)
             .clip(RoundedCornerShape(RaioSecao))
             .fundoFaixaRosa()
-            .padding(horizontal = 24.dp, vertical = 32.dp),
+            .padding(
+                horizontal = 24.dp,
+                vertical = 32.dp,
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Kicker("VISITE", Color.White)
+        Kicker(
+            texto = "VISITE",
+            cor = Color.White,
+        )
+
         Spacer(Modifier.height(14.dp))
+
         Text(
             text = "Venha até a Lazer & Sport",
             style = MaterialTheme.typography.headlineMedium,
             color = Color.White,
             textAlign = TextAlign.Center,
         )
+
         Spacer(Modifier.height(8.dp))
+
         Text(
-            text = "Fale com a gente para montar o orçamento do seu evento ou espaço.",
+            text = "Fale com nossa equipe para montar o projeto ideal para o seu espaço.",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.88f),
             textAlign = TextAlign.Center,
         )
+
         Spacer(Modifier.height(20.dp))
+
         BotaoPrincipal(
             texto = "Falar com a equipe",
             aoClicar = aoFalarConosco,

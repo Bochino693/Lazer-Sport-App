@@ -198,8 +198,15 @@ fun NavegacaoApp(
                 nomeUsuario = nome,
                 saudeApi = api.saude,
                 recursosDisponiveis = api.recursos,
-                aoNavegar = { rota -> navController.navigate(rota) { launchSingleTop = true } },
-                aoAbrirItem = { id -> navController.navigate(rotaDetalhe(id)) },
+                aoNavegar = { rota ->
+                    navController.navigate(rota) {
+                        launchSingleTop = true
+                    }
+                },
+                aoAbrirItem = { id ->
+                    navController.navigate(rotaDetalhe(id))
+                },
+                aoAdicionarCarrinho = menuViewModel::adicionarAoCarrinho,
             )
         }
 
