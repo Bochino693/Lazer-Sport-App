@@ -15,13 +15,15 @@ android {
     defaultConfig {
         applicationId = "com.example.lazer_sport_app"
         minSdk = 24
-        targetSdk = 37
+        // targetSdk ALINHADO com a imagem do emulador (API 35).
+        // Com 37 sobre uma imagem 35 o System UI trava: o sistema
+        // aplica regras de janela que aquela imagem nao implementa.
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Producao. O buildType debug sobrescreve pra apontar no Django local.
         buildConfigField(
             "String",
             "BASE_URL",
@@ -31,8 +33,8 @@ android {
 
     buildTypes {
         debug {
-            // 10.0.2.2 = a sua maquina, vista de dentro do emulador.
-            // Em celular fisico troque pelo IP da LAN (ex.: 192.168.0.10).
+            // 10.0.2.2 = sua maquina vista de dentro do emulador.
+            // Em celular fisico troque pelo IP da LAN.
             buildConfigField(
                 "String",
                 "BASE_URL",
@@ -47,8 +49,8 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-        viewBinding = true
-        dataBinding = true
+        // viewBinding e dataBinding removidos: o app e 100% Compose.
+        // Ligados, geravam classes pra nada e engordavam cada build.
     }
 
     compileOptions {
@@ -70,9 +72,6 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.12.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")
-
-    // Faltavam: hiltViewModel()/collectAsState dentro de @Composable
-    // dependem destes dois. Sem eles o MenuViewModel nao compila.
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
 
@@ -97,7 +96,6 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.android.material:material:1.13.0")
 
-    // Carregamento de imagens da API
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
 

@@ -1,48 +1,27 @@
-// app/src/main/java/com/example/lazer_sport_app/ui/menu/MenuViewModel.kt
+// Busca o conteudo da home e entrega pro MenuScreen.
 //
-// Busca o conteudo real da API e entrega pro MenuScreen.
+// O CatalogoRepository saiu daqui e foi pro data/Network.kt: agora
+// catalogo, pecas, eventos e estabelecimentos usam o mesmo repositorio,
+// e nao fazia sentido ele morar dentro do ViewModel de uma tela.
 //
-// TRES DECISOES QUE IMPORTAM AQUI:
-//
-// 1) CARREGAMENTO PARALELO. Categorias, brinquedos e pecas sao tres
-//    chamadas independentes. Em sequencia seriam ~3x o tempo; com
-//    async/await elas saem juntas.
-//
-// 2) FALHA PARCIAL NAO DERRUBA A TELA. Se `pecas` falhar mas
-//    `brinquedos` responder, o cliente ve os brinquedos. Cada secao
-//    tem seu proprio try -- por isso `runCatching` item a item, nunca
-//    um try gigante em volta de tudo.
-//
-// 3) FALLBACK VISIVEL. Com a API fora do ar, a tela abre com os dados
-//    de demonstracao e uma mensagem discreta em vez de tela branca.
-//    Some assim que o backend responder.
-//
-// As secoes "promocoes" e "combos" ainda nao tem endpoint no Django.
-// Por enquanto derivo promocoes dos brinquedos e deixo combos vazio --
-// a secao simplesmente nao aparece (o MenuScreen ja testa isEmpty).
+// FALLBACK VISIVEL: com a API fora do ar a tela abre com dados de
+// demonstracao e um aviso, em vez de tela vazia sem explicacao.
 
 package com.example.lazer_sport_app.ui.menu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lazer_sport_app.data.ApiService
-import com.example.lazer_sport_app.data.BrinquedoDto
-import com.example.lazer_sport_app.data.CategoriaDto
+import com.example.lazer_sport_app.data.CatalogoRepository
+import com.example.lazer_sport_app.ui.components.CategoriaVitrine
+import com.example.lazer_sport_app.ui.components.ConteudoMenu
+import com.example.lazer_sport_app.ui.components.ItemVitrine
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.getOrDefault
-
-// ============================================================
-// ESTADO DA TELA
-// ============================================================
 
 data class EstadoMenu(
     val carregando: Boolean = true,
@@ -50,93 +29,6 @@ data class EstadoMenu(
     /** Preenchido quando NADA veio da rede -- a tela mostra demo. */
     val avisoOffline: String? = null,
 )
-
-// ============================================================
-// REPOSITORIO
-// ============================================================
-
-@Singleton
-class CatalogoRepository @Inject constructor(
-    private val api: ApiService,
-) {
-
-    /**
-     * Dispara as chamadas em paralelo. Cada uma falha por conta
-     * propria: o que responder, aparece.
-     */
-    suspend fun carregarMenu(): ConteudoMenu = coroutineScope {
-
-        val categoriasAsync = async {
-            runCatching { api.categorias() }.getOrDefault(emptyList())
-        }
-        val brinquedosAsync = async {
-            runCatching { api.brinquedos(pagina = 1).results }
-                .getOrDefault(emptyList())
-        }
-        val pecasAsync = async {
-            runCatching { api.pecas(pagina = 1).results }
-                .getOrDefault(emptyList())
-        }
-
-        val categorias = categoriasAsync.await()
-        val brinquedos = brinquedosAsync.await()
-        val pecas = pecasAsync.await()
-
-        // So entra na vitrine o que o Django marcou pra exibir.
-        val visiveis = brinquedos.filter { it.exibirNaLoja }
-
-        ConteudoMenu(
-            categorias = categorias.map { it.paraVitrine() },
-            // Sem endpoint de promocoes ainda: uso os mais bem avaliados
-            // como destaque secundario. Troque quando a API existir.
-            promocoes = visiveis
-                .sortedByDescending { it.avaliacao?.replace(",", ".")?.toFloatOrNull() ?: 0f }
-                .take(8)
-                .map { it.paraVitrine(selo = "DESTAQUE") },
-            destaques = visiveis.take(12).map { it.paraVitrine() },
-            pecas = pecas.map { it.paraVitrine() },
-            combos = emptyList(),
-            estabelecimentos = emptyList(),
-            eventos = emptyList(),
-        )
-    }
-}
-
-// ---- Conversores DTO -> modelo de tela ----------------------
-// Ficam aqui de proposito: se o serializer do Django mudar, muda um
-// lugar so e o Compose nem fica sabendo.
-
-private fun CategoriaDto.paraVitrine() = CategoriaVitrine(
-    id = id,
-    nome = nome.orEmpty().ifBlank { "Categoria" },
-    imagemUrl = imagem,
-)
-
-private fun BrinquedoDto.paraVitrine(selo: String? = null) = ItemVitrine(
-    id = id,
-    nome = nome,
-    preco = valor?.let { formatarReal(it) },
-    imagemUrl = imagem,
-    selo = selo,
-    avaliacao = avaliacao?.takeIf { it.isNotBlank() },
-)
-
-/** O DRF manda DecimalField como string ("1250.00"). */
-private fun formatarReal(bruto: String): String {
-    val numero = bruto.replace(",", ".").toDoubleOrNull() ?: return bruto
-    val inteiro = numero.toLong()
-    val centavos = ((numero - inteiro) * 100).toInt()
-    val comPontos = inteiro.toString()
-        .reversed()
-        .chunked(3)
-        .joinToString(".")
-        .reversed()
-    return "R$ %s,%02d".format(comPontos, centavos)
-}
-
-// ============================================================
-// VIEWMODEL
-// ============================================================
 
 @HiltViewModel
 class MenuViewModel @Inject constructor(
@@ -173,4 +65,32 @@ class MenuViewModel @Inject constructor(
             }
         }
     }
+}
+
+/** Conteudo de demonstracao usado quando a API nao responde. */
+fun dadosDemo(): ConteudoMenu {
+    fun itens(prefixo: String, quantidade: Int, base: Int) =
+        (1..quantidade).map { indice ->
+            ItemVitrine(
+                id = base + indice,
+                nome = "$prefixo $indice",
+                preco = "R$ ${(indice * 137) + 290},00",
+                avaliacao = "4,${5 + (indice % 5)}",
+                selo = if (indice == 1) "NOVO" else null,
+            )
+        }
+
+    return ConteudoMenu(
+        categorias = listOf(
+            "Infláveis", "Arcades", "Mesas", "Simuladores", "Kids", "Radicais",
+        ).mapIndexed { indice, nome -> CategoriaVitrine(indice + 1, nome) },
+        promocoes = itens("Promoção", 5, 100),
+        destaques = itens("Brinquedo", 6, 200),
+        pecas = itens("Peça", 5, 300),
+        combos = itens("Combo", 4, 400),
+        estabelecimentos = (1..4).map {
+            ItemVitrine(500 + it, "Estabelecimento parceiro $it")
+        },
+        eventos = (1..4).map { ItemVitrine(600 + it, "Evento realizado $it") },
+    )
 }

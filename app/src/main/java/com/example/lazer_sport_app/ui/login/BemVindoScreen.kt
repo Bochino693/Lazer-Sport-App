@@ -1,3 +1,11 @@
+// O cartao branco de 28dp que segurava os botoes sumiu -- era o maior
+// ponto de ruptura visual do app: abria num azul-noite bonito e levava
+// um bloco branco na cara.
+//
+// Agora o fundo da tela e o proprio hero e os botoes flutuam sobre ele,
+// com hierarquia de peso: rosa cheio > vidro > vidro > link. Antes eram
+// tres botoes do mesmo tamanho disputando atencao.
+
 package com.example.lazer_sport_app.ui.login
 
 import androidx.compose.foundation.Image
@@ -19,25 +27,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.PersonAdd
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -47,12 +49,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lazer_sport_app.R
-import com.example.lazer_sport_app.ui.theme.AzulClaro
-import com.example.lazer_sport_app.ui.theme.AzulEscuro
+import com.example.lazer_sport_app.ui.components.BotaoPrincipal
+import com.example.lazer_sport_app.ui.components.BotaoVidro
+import com.example.lazer_sport_app.ui.components.Kicker
+import com.example.lazer_sport_app.ui.menu.fundoHero
+import com.example.lazer_sport_app.ui.theme.AzulPastel
 import com.example.lazer_sport_app.ui.theme.LazerSportTheme
-import com.example.lazer_sport_app.ui.theme.NoiteProfunda
-import com.example.lazer_sport_app.ui.theme.RaioBotao
-import com.example.lazer_sport_app.ui.theme.Vermelho
+import com.example.lazer_sport_app.ui.theme.RosaMarca
+import com.example.lazer_sport_app.ui.theme.TextoFraco
+import com.example.lazer_sport_app.ui.theme.TextoMedio
 
 @Composable
 fun BemVindoScreen(
@@ -64,13 +69,7 @@ fun BemVindoScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    0.0f to NoiteProfunda,
-                    0.52f to AzulEscuro,
-                    1.0f to AzulClaro,
-                )
-            ),
+            .fundoHero(),
     ) {
         Column(
             modifier = Modifier
@@ -78,7 +77,7 @@ fun BemVindoScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 20.dp),
+                .padding(horizontal = 24.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
@@ -87,9 +86,10 @@ fun BemVindoScreen(
                     .widthIn(max = 520.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Spacer(Modifier.height(8.dp))
                 SeloMarca()
 
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
 
                 Image(
                     painter = painterResource(R.drawable.ilustracao_abertura),
@@ -97,122 +97,83 @@ fun BemVindoScreen(
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(190.dp),
+                        .height(186.dp),
                 )
 
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(20.dp))
+
+                Kicker("DESDE 1996")
+
+                Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = "Diversão começa aqui.",
+                    text = "Diversão\ncomeça aqui.",
                     color = Color.White,
                     style = MaterialTheme.typography.displayLarge,
                     textAlign = TextAlign.Center,
+                    lineHeight = 40.sp,
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Explore brinquedos, peças e serviços Lazer & Sport de um jeito simples.",
-                    color = Color.White.copy(alpha = 0.78f),
+                    text = "Brinquedos, peças e serviços Lazer & Sport na palma da mão.",
+                    color = TextoMedio,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.widthIn(max = 390.dp),
+                    modifier = Modifier.widthIn(max = 340.dp),
                 )
 
-                Spacer(Modifier.height(26.dp))
+                Spacer(Modifier.height(34.dp))
 
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.White,
-                    shape = RoundedCornerShape(28.dp),
-                    shadowElevation = 18.dp,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = "Como você quer continuar?",
-                            color = NoiteProfunda,
-                            style = MaterialTheme.typography.titleLarge,
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(Modifier.height(18.dp))
+                BotaoPrincipal(
+                    texto = "Entrar",
+                    aoClicar = aoEntrar,
+                    cor = RosaMarca,
+                    icone = Icons.Rounded.Login,
+                )
 
-                        Button(
-                            onClick = aoEntrar,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(RaioBotao),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Vermelho,
-                                contentColor = Color.White,
-                            ),
-                        ) {
-                            Icon(Icons.Rounded.Login, contentDescription = null)
-                            Spacer(Modifier.width(10.dp))
-                            Text("Entrar", style = MaterialTheme.typography.labelLarge)
-                        }
+                Spacer(Modifier.height(12.dp))
 
-                        Spacer(Modifier.height(12.dp))
+                BotaoVidro(
+                    texto = "Continuar com Google",
+                    aoClicar = aoContinuarComGoogle,
+                    conteudoInicial = { MarcaGoogle() },
+                )
 
-                        OutlinedButton(
-                            onClick = aoContinuarComGoogle,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            shape = RoundedCornerShape(RaioBotao),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = NoiteProfunda,
-                            ),
-                        ) {
-                            GoogleMark()
-                            Spacer(Modifier.width(10.dp))
-                            Text("Continuar com Google")
-                        }
+                Spacer(Modifier.height(12.dp))
 
-                        Spacer(Modifier.height(12.dp))
+                BotaoVidro(
+                    texto = "Criar uma conta",
+                    aoClicar = aoCriarConta,
+                    icone = Icons.Rounded.PersonAdd,
+                )
 
-                        OutlinedButton(
-                            onClick = aoCriarConta,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(54.dp),
-                            shape = RoundedCornerShape(RaioBotao),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = AzulEscuro,
-                            ),
-                        ) {
-                            Icon(Icons.Rounded.PersonAdd, contentDescription = null)
-                            Spacer(Modifier.width(10.dp))
-                            Text("Criar uma conta")
-                        }
+                Spacer(Modifier.height(14.dp))
 
-                        Spacer(Modifier.height(6.dp))
-
-                        TextButton(onClick = aoContinuarSemLogin) {
-                            Text(
-                                text = "Continuar sem login",
-                                color = NoiteProfunda.copy(alpha = 0.78f),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowForward,
-                                contentDescription = null,
-                                tint = NoiteProfunda.copy(alpha = 0.78f),
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
+                TextButton(onClick = aoContinuarSemLogin) {
+                    Text(
+                        text = "Continuar sem login",
+                        color = AzulPastel,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowForward,
+                        contentDescription = null,
+                        tint = AzulPastel,
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
 
                 Spacer(Modifier.height(18.dp))
                 Text(
-                    text = "Ao continuar, você concorda com nossos Termos e Política de Privacidade.",
-                    color = Color.White.copy(alpha = 0.68f),
+                    text = "Ao continuar, você concorda com nossos Termos e " +
+                            "Política de Privacidade.",
+                    color = TextoFraco,
                     style = MaterialTheme.typography.labelSmall,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.widthIn(max = 360.dp),
+                    modifier = Modifier.widthIn(max = 340.dp),
                 )
+                Spacer(Modifier.height(12.dp))
             }
         }
     }
@@ -224,46 +185,33 @@ private fun SeloMarca() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(13.dp))
-                .background(Vermelho),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "L&S",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-            )
-        }
+        // Antes era um "L&S" desenhado a mao. O simbolo real ja estava
+        // em res/drawable e nao estava sendo usado nesta tela.
+        Image(
+            painter = painterResource(R.drawable.ls_simbolo),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(40.dp),
+        )
         Spacer(Modifier.width(11.dp))
-        Column {
-            Text(
-                text = "LAZER & SPORT",
-                color = Color.White,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 19.sp,
-                letterSpacing = 1.2.sp,
-            )
-            Text(
-                text = "DESDE 1996",
-                color = Color.White.copy(alpha = 0.64f),
-                style = MaterialTheme.typography.labelSmall,
-            )
-        }
+        Text(
+            text = "LAZER & SPORT",
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 19.sp,
+            letterSpacing = 1.2.sp,
+        )
     }
 }
 
 @Composable
-private fun GoogleMark() {
+private fun MarcaGoogle() {
     Box(
         modifier = Modifier
             .size(24.dp)
             .clip(CircleShape)
-            .border(1.dp, Color(0xFFDADCE0), CircleShape)
-            .background(Color.White),
+            .background(Color.White)
+            .border(1.dp, Color(0xFFDADCE0), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -278,7 +226,7 @@ private fun GoogleMark() {
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun BemVindoPreview() {
-    LazerSportTheme(escuro = false) {
+    LazerSportTheme {
         BemVindoScreen(
             aoEntrar = {},
             aoContinuarSemLogin = {},
