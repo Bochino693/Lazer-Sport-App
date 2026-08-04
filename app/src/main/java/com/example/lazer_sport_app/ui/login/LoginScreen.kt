@@ -1,11 +1,3 @@
-// Tela de login + ViewModel (sao acoplados; separe quando crescer).
-//
-// MUDOU: o Surface branco virou cartao de vidro; OutlinedTextField
-// padrao virou CampoLazer (as cores do Material sobre fundo escuro
-// deixavam label e texto quase invisiveis); ganhou botao voltar, que
-// nao existia -- quem entrava aqui pela tela de boas-vindas nao tinha
-// nenhuma affordance de saida.
-
 package com.example.lazer_sport_app.ui.login
 
 import androidx.compose.animation.AnimatedVisibility
@@ -56,7 +48,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lazer_sport_app.data.AuthRepository
@@ -64,7 +56,7 @@ import com.example.lazer_sport_app.data.Resultado
 import com.example.lazer_sport_app.ui.components.BotaoPrincipal
 import com.example.lazer_sport_app.ui.components.CampoLazer
 import com.example.lazer_sport_app.ui.components.Kicker
-import com.example.lazer_sport_app.ui.menu.LogoCompleta
+import com.example.lazer_sport_app.ui.menu.PainelMarcaEntrada
 import com.example.lazer_sport_app.ui.menu.fundoHero
 import com.example.lazer_sport_app.ui.menu.vidro
 import com.example.lazer_sport_app.ui.theme.AzulPastel
@@ -88,7 +80,10 @@ data class LoginUiState(
     val sucesso: Boolean = false,
 ) {
     val podeEnviar: Boolean
-        get() = login.isNotBlank() && senha.length >= 4 && !carregando
+        get() =
+            login.isNotBlank() &&
+                    senha.length >= 4 &&
+                    !carregando
 }
 
 @HiltViewModel
@@ -96,24 +91,66 @@ class LoginViewModel @Inject constructor(
     private val repositorio: AuthRepository,
 ) : ViewModel() {
 
-    private val _estado = MutableStateFlow(LoginUiState())
-    val estado: StateFlow<LoginUiState> = _estado.asStateFlow()
+    private val _estado =
+        MutableStateFlow(LoginUiState())
 
-    fun aoMudarLogin(valor: String) = _estado.update { it.copy(login = valor, erro = null) }
-    fun aoMudarSenha(valor: String) = _estado.update { it.copy(senha = valor, erro = null) }
+    val estado: StateFlow<LoginUiState> =
+        _estado.asStateFlow()
+
+    fun aoMudarLogin(valor: String) {
+        _estado.update {
+            it.copy(
+                login = valor,
+                erro = null,
+            )
+        }
+    }
+
+    fun aoMudarSenha(valor: String) {
+        _estado.update {
+            it.copy(
+                senha = valor,
+                erro = null,
+            )
+        }
+    }
 
     fun entrar() {
         val atual = _estado.value
+
         if (!atual.podeEnviar) return
 
         viewModelScope.launch {
-            _estado.update { it.copy(carregando = true, erro = null) }
+            _estado.update {
+                it.copy(
+                    carregando = true,
+                    erro = null,
+                )
+            }
 
-            when (val r = repositorio.entrar(atual.login, atual.senha)) {
-                is Resultado.Sucesso ->
-                    _estado.update { it.copy(carregando = false, sucesso = true) }
-                is Resultado.Erro ->
-                    _estado.update { it.copy(carregando = false, erro = r.mensagem) }
+            when (
+                val resultado = repositorio.entrar(
+                    atual.login,
+                    atual.senha,
+                )
+            ) {
+                is Resultado.Sucesso -> {
+                    _estado.update {
+                        it.copy(
+                            carregando = false,
+                            sucesso = true,
+                        )
+                    }
+                }
+
+                is Resultado.Erro -> {
+                    _estado.update {
+                        it.copy(
+                            carregando = false,
+                            erro = resultado.mensagem,
+                        )
+                    }
+                }
             }
         }
     }
@@ -128,11 +165,17 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val estado by viewModel.estado.collectAsState()
-    var senhaVisivel by remember { mutableStateOf(false) }
+
+    var senhaVisivel by remember {
+        mutableStateOf(false)
+    }
+
     val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(estado.sucesso) {
-        if (estado.sucesso) aoEntrar()
+        if (estado.sucesso) {
+            aoEntrar()
+        }
     }
 
     Box(
@@ -152,38 +195,57 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = aoVoltar) {
+                IconButton(
+                    onClick = aoVoltar,
+                ) {
                     Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector =
+                            Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Voltar",
                         tint = TextoForte,
                     )
                 }
             }
 
+            Spacer(Modifier.height(8.dp))
+
+            PainelMarcaEntrada(
+                modifier = Modifier.padding(
+                    horizontal = 20.dp,
+                ),
+                altura = 168.dp,
+            )
+
             Spacer(Modifier.height(18.dp))
-            LogoCompleta(largura = 200.dp)
-            Spacer(Modifier.height(14.dp))
+
             Kicker("ÁREA DO CLIENTE")
+
             Spacer(Modifier.height(30.dp))
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .vidro(raio = RaioCard + 6.dp, intensidade = 0.07f)
+                    .vidro(
+                        raio = RaioCard + 6.dp,
+                        intensidade = 0.07f,
+                    )
                     .padding(22.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = "Entrar na sua conta",
-                    style = MaterialTheme.typography.titleLarge,
+                    style =
+                        MaterialTheme.typography.titleLarge,
                     color = TextoForte,
                 )
+
                 Spacer(Modifier.height(4.dp))
+
                 Text(
                     text = "Acompanhe pedidos, orçamentos e manutenções.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style =
+                        MaterialTheme.typography.bodyMedium,
                     color = TextoMedio,
                     textAlign = TextAlign.Center,
                 )
@@ -216,18 +278,23 @@ fun LoginScreen(
                         PasswordVisualTransformation()
                     },
                     iconeFinal = {
-                        IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
+                        IconButton(
+                            onClick = {
+                                senhaVisivel = !senhaVisivel
+                            },
+                        ) {
                             Icon(
                                 imageVector = if (senhaVisivel) {
                                     Icons.Filled.VisibilityOff
                                 } else {
                                     Icons.Filled.Visibility
                                 },
-                                contentDescription = if (senhaVisivel) {
-                                    "Ocultar senha"
-                                } else {
-                                    "Mostrar senha"
-                                },
+                                contentDescription =
+                                    if (senhaVisivel) {
+                                        "Ocultar senha"
+                                    } else {
+                                        "Mostrar senha"
+                                    },
                             )
                         }
                     },
@@ -235,32 +302,46 @@ fun LoginScreen(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
                     ),
-                    acoesTeclado = KeyboardActions(onDone = { viewModel.entrar() }),
+                    acoesTeclado = KeyboardActions(
+                        onDone = {
+                            viewModel.entrar()
+                        },
+                    ),
                 )
 
-                AnimatedVisibility(visible = estado.erro != null) {
+                AnimatedVisibility(
+                    visible = estado.erro != null,
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp)
                             .background(
-                                RosaMarca.copy(alpha = 0.14f),
-                                RoundedCornerShape(12.dp),
+                                color = RosaMarca.copy(
+                                    alpha = 0.14f,
+                                ),
+                                shape =
+                                    RoundedCornerShape(12.dp),
                             )
                             .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment =
+                            Alignment.CenterVertically,
                     ) {
                         Icon(
-                            Icons.Filled.ErrorOutline,
+                            imageVector =
+                                Icons.Filled.ErrorOutline,
                             contentDescription = null,
                             tint = RosaMarca,
                             modifier = Modifier.size(18.dp),
                         )
+
                         Spacer(Modifier.width(9.dp))
+
                         Text(
                             text = estado.erro.orEmpty(),
                             color = RosaMarca,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style =
+                                MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -279,19 +360,23 @@ fun LoginScreen(
 
                 TextButton(
                     onClick = {
-                        // A API nao tem endpoint de reset: manda pro site.
                         uriHandler.openUri(
-                            "https://www.lazersport.com.br/accounts/password/reset/"
+                            "https://www.lazersport.com.br/accounts/password/reset/",
                         )
                     },
                 ) {
-                    Text("Esqueci minha senha", color = TextoMedio)
+                    Text(
+                        text = "Esqueci minha senha",
+                        color = TextoMedio,
+                    )
                 }
             }
 
             Spacer(Modifier.height(22.dp))
 
-            TextButton(onClick = aoCriarConta) {
+            TextButton(
+                onClick = aoCriarConta,
+            ) {
                 Text(
                     text = "Ainda não tenho conta",
                     color = AzulPastel,
@@ -299,8 +384,13 @@ fun LoginScreen(
                 )
             }
 
-            TextButton(onClick = aoEntrarSemConta) {
-                Text("Ver catálogo sem entrar", color = TextoMedio)
+            TextButton(
+                onClick = aoEntrarSemConta,
+            ) {
+                Text(
+                    text = "Ver catálogo sem entrar",
+                    color = TextoMedio,
+                )
             }
 
             Spacer(Modifier.height(30.dp))
