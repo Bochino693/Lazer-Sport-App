@@ -1,0 +1,28 @@
+CORREÇÃO LAZER & SPORT APP — API REAL + ENTRADA RESPONSIVA
+
+1. Feche o Android Studio.
+2. Extraia este ZIP na raiz:
+   C:\Users\LAZER GAMES\AndroidStudioProjects\LazerSport_APP
+3. Confirme a substituição dos 3 arquivos.
+4. Abra o Android Studio.
+5. Execute:
+   File > Sync Project with Gradle Files
+6. Depois:
+   Build > Clean Project
+   Build > Rebuild Project
+7. Rode o app.
+
+O QUE FOI CORRIGIDO
+
+- O build debug não usa mais http://10.0.2.2:8000.
+- O app instalado no celular passa a consultar:
+  https://www.lazersport.com.br/api/v1/
+- Foram removidos os itens falsos "Promoção 1", "Brinquedo 1" etc.
+- A tela inicial sem login agora é responsiva.
+- Entrar e Criar conta aparecem lado a lado.
+- Em tela horizontal/tablet, imagem e ações aparecem em duas colunas.
+
+A rota Django já está correta:
+path("api/v1/", include("core.api.urls"))
+antes de:
+path("", include("core.urls"))

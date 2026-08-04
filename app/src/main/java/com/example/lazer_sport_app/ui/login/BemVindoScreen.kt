@@ -2,15 +2,18 @@ package com.example.lazer_sport_app.ui.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -32,7 +35,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lazer_sport_app.ui.components.BotaoPrincipal
@@ -41,7 +43,6 @@ import com.example.lazer_sport_app.ui.components.Kicker
 import com.example.lazer_sport_app.ui.menu.PainelMarcaEntrada
 import com.example.lazer_sport_app.ui.menu.fundoHero
 import com.example.lazer_sport_app.ui.theme.AzulPastel
-import com.example.lazer_sport_app.ui.theme.LazerSportTheme
 import com.example.lazer_sport_app.ui.theme.RosaMarca
 import com.example.lazer_sport_app.ui.theme.TextoFraco
 import com.example.lazer_sport_app.ui.theme.TextoMedio
@@ -53,132 +54,174 @@ fun BemVindoScreen(
     aoCriarConta: () -> Unit,
     aoContinuarComGoogle: () -> Unit,
 ) {
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .fundoHero(),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    horizontal = 24.dp,
-                    vertical = 20.dp,
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+        val paisagem = maxWidth > maxHeight || maxWidth >= 700.dp
+
+        if (paisagem) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(28.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PainelMarcaEntrada(
+                    modifier = Modifier.weight(1.08f),
+                    altura = 300.dp,
+                )
+
+                ConteudoBemVindo(
+                    aoEntrar = aoEntrar,
+                    aoContinuarSemLogin = aoContinuarSemLogin,
+                    aoCriarConta = aoCriarConta,
+                    aoContinuarComGoogle = aoContinuarComGoogle,
+                    compacto = true,
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                )
+            }
+        } else {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 520.dp),
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Spacer(Modifier.height(8.dp))
-
                 PainelMarcaEntrada(
-                    modifier = Modifier.fillMaxWidth(),
-                    altura = 210.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 520.dp),
+                    altura = 158.dp,
                 )
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.size(18.dp))
 
-                Kicker("DESDE 1996")
-
-                Spacer(Modifier.height(16.dp))
-
-                Text(
-                    text = "Diversão\ncomeça aqui.",
-                    color = Color.White,
-                    style = MaterialTheme.typography.displayLarge,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 40.sp,
+                ConteudoBemVindo(
+                    aoEntrar = aoEntrar,
+                    aoContinuarSemLogin = aoContinuarSemLogin,
+                    aoCriarConta = aoCriarConta,
+                    aoContinuarComGoogle = aoContinuarComGoogle,
+                    compacto = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 520.dp),
                 )
-
-                Spacer(Modifier.height(10.dp))
-
-                Text(
-                    text = "Brinquedos, peças e serviços Lazer & Sport na palma da mão.",
-                    color = TextoMedio,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.widthIn(max = 340.dp),
-                )
-
-                Spacer(Modifier.height(34.dp))
-
-                BotaoPrincipal(
-                    texto = "Entrar",
-                    aoClicar = aoEntrar,
-                    cor = RosaMarca,
-                    icone = Icons.AutoMirrored.Rounded.Login,
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                BotaoVidro(
-                    texto = "Continuar com Google",
-                    aoClicar = aoContinuarComGoogle,
-                    conteudoInicial = {
-                        MarcaGoogle()
-                    },
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                BotaoVidro(
-                    texto = "Criar uma conta",
-                    aoClicar = aoCriarConta,
-                    icone = Icons.Rounded.PersonAdd,
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                TextButton(
-                    onClick = aoContinuarSemLogin,
-                ) {
-                    Text(
-                        text = "Continuar sem login",
-                        color = AzulPastel,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-
-                    Spacer(Modifier.width(6.dp))
-
-                    Icon(
-                        imageVector =
-                            Icons.AutoMirrored.Rounded.ArrowForward,
-                        contentDescription = null,
-                        tint = AzulPastel,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-
-                Spacer(Modifier.height(18.dp))
-
-                Text(
-                    text = "Ao continuar, você concorda com nossos Termos e " +
-                            "Política de Privacidade.",
-                    color = TextoFraco,
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.widthIn(max = 340.dp),
-                )
-
-                Spacer(Modifier.height(12.dp))
             }
         }
     }
 }
 
-/**
- * Símbolo temporário do botão do Google.
- *
- * Caso você já tenha criado ic_google.xml e GoogleIcon.kt,
- * substitua MarcaGoogle() por IconeGoogle().
- */
+@Composable
+private fun ConteudoBemVindo(
+    aoEntrar: () -> Unit,
+    aoContinuarSemLogin: () -> Unit,
+    aoCriarConta: () -> Unit,
+    aoContinuarComGoogle: () -> Unit,
+    compacto: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Kicker("DESDE 1996")
+
+        Spacer(Modifier.size(if (compacto) 12.dp else 14.dp))
+
+        Text(
+            text = "Diversão começa aqui.",
+            color = Color.White,
+            style = if (compacto) {
+                MaterialTheme.typography.headlineLarge
+            } else {
+                MaterialTheme.typography.displayMedium
+            },
+            textAlign = TextAlign.Center,
+            lineHeight = if (compacto) 38.sp else 44.sp,
+        )
+
+        Spacer(Modifier.size(8.dp))
+
+        Text(
+            text = "Brinquedos, peças e serviços Lazer & Sport na palma da mão.",
+            color = TextoMedio,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 390.dp),
+        )
+
+        Spacer(Modifier.size(if (compacto) 20.dp else 24.dp))
+
+        // As duas ações principais ficam lado a lado.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            BotaoPrincipal(
+                texto = "Entrar",
+                aoClicar = aoEntrar,
+                cor = RosaMarca,
+                icone = Icons.AutoMirrored.Rounded.Login,
+                modifier = Modifier.weight(1f),
+            )
+
+            BotaoVidro(
+                texto = "Criar conta",
+                aoClicar = aoCriarConta,
+                icone = Icons.Rounded.PersonAdd,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Spacer(Modifier.size(10.dp))
+
+        BotaoVidro(
+            texto = "Continuar com Google",
+            aoClicar = aoContinuarComGoogle,
+            conteudoInicial = { MarcaGoogle() },
+        )
+
+        Spacer(Modifier.size(6.dp))
+
+        TextButton(onClick = aoContinuarSemLogin) {
+            Text(
+                text = "Explorar sem login",
+                color = AzulPastel,
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            Spacer(Modifier.width(6.dp))
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                contentDescription = null,
+                tint = AzulPastel,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+
+        Text(
+            text = "Ao continuar, você concorda com nossos Termos e Política de Privacidade.",
+            color = TextoFraco,
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 380.dp),
+        )
+
+        Spacer(Modifier.size(10.dp))
+    }
+}
+
 @Composable
 private fun MarcaGoogle() {
     Box(
@@ -198,23 +241,6 @@ private fun MarcaGoogle() {
             color = Color(0xFF4285F4),
             fontWeight = FontWeight.ExtraBold,
             fontSize = 14.sp,
-        )
-    }
-}
-
-@Preview(
-    showBackground = true,
-    widthDp = 390,
-    heightDp = 844,
-)
-@Composable
-private fun BemVindoPreview() {
-    LazerSportTheme {
-        BemVindoScreen(
-            aoEntrar = {},
-            aoContinuarSemLogin = {},
-            aoCriarConta = {},
-            aoContinuarComGoogle = {},
         )
     }
 }

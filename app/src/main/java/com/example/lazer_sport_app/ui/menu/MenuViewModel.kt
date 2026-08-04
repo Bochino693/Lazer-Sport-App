@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lazer_sport_app.data.CarrinhoRepository
 import com.example.lazer_sport_app.data.CatalogoRepository
-import com.example.lazer_sport_app.ui.components.CategoriaVitrine
 import com.example.lazer_sport_app.ui.components.ConteudoMenu
 import com.example.lazer_sport_app.ui.components.ItemVitrine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,42 +42,43 @@ class MenuViewModel @Inject constructor(
                 )
             }
 
-            val resultado = runCatching {
+            runCatching {
                 repositorio.carregarMenu()
-            }
+            }.onSuccess { conteudoRecebido ->
+                val semConteudo =
+                    conteudoRecebido.categorias.isEmpty() &&
+                    conteudoRecebido.promocoes.isEmpty() &&
+                    conteudoRecebido.destaques.isEmpty() &&
+                    conteudoRecebido.pecas.isEmpty() &&
+                    conteudoRecebido.combos.isEmpty() &&
+                    conteudoRecebido.estabelecimentos.isEmpty() &&
+                    conteudoRecebido.eventos.isEmpty()
 
-            val conteudoRecebido = resultado.getOrDefault(ConteudoMenu())
-
-            val semConteudo =
-                conteudoRecebido.categorias.isEmpty() &&
-                        conteudoRecebido.promocoes.isEmpty() &&
-                        conteudoRecebido.destaques.isEmpty() &&
-                        conteudoRecebido.pecas.isEmpty() &&
-                        conteudoRecebido.combos.isEmpty() &&
-                        conteudoRecebido.estabelecimentos.isEmpty() &&
-                        conteudoRecebido.eventos.isEmpty()
-
-            _estado.update {
-                it.copy(
-                    carregando = false,
-                    conteudo = if (semConteudo) {
-                        dadosDemonstracao()
-                    } else {
-                        conteudoRecebido
-                    },
-                    avisoOffline = if (semConteudo) {
-                        "Não foi possível atualizar o catálogo. " +
-                                "Mostrando conteúdo temporário."
-                    } else {
-                        null
-                    },
-                )
+                _estado.update {
+                    it.copy(
+                        carregando = false,
+                        conteudo = conteudoRecebido,
+                        avisoOffline = if (semConteudo) {
+                            "A API não retornou itens. Verifique a conexão e tente novamente."
+                        } else {
+                            null
+                        },
+                    )
+                }
+            }.onFailure {
+                _estado.update {
+                    it.copy(
+                        carregando = false,
+                        conteudo = ConteudoMenu(),
+                        avisoOffline =
+                            "Não foi possível carregar os dados reais da Lazer & Sport.",
+                    )
+                }
             }
         }
     }
 
     fun adicionarAoCarrinho(item: ItemVitrine) {
-        if (item.demonstracao) return
         if (!item.disponivelParaCompra) return
         if (item.preco.isNullOrBlank()) return
 
@@ -86,66 +86,4 @@ class MenuViewModel @Inject constructor(
             carrinho.adicionar(item)
         }
     }
-}
-
-private fun dadosDemonstracao(): ConteudoMenu {
-    fun criarItens(
-        prefixo: String,
-        quantidade: Int,
-        base: Int,
-    ): List<ItemVitrine> {
-        return (1..quantidade).map { indice ->
-            ItemVitrine(
-                id = base + indice,
-                nome = "$prefixo $indice",
-                demonstracao = true,
-            )
-        }
-    }
-
-    return ConteudoMenu(
-        categorias = listOf(
-            "Arcades",
-            "Mesas",
-            "Simuladores",
-            "Kids",
-            "Competitivos",
-            "Parques",
-        ).mapIndexed { indice, nome ->
-            CategoriaVitrine(
-                id = indice + 1,
-                nome = nome,
-            )
-        },
-        promocoes = criarItens(
-            prefixo = "Promoção",
-            quantidade = 5,
-            base = 100,
-        ),
-        destaques = criarItens(
-            prefixo = "Brinquedo",
-            quantidade = 6,
-            base = 200,
-        ),
-        pecas = criarItens(
-            prefixo = "Peça de reposição",
-            quantidade = 5,
-            base = 300,
-        ),
-        combos = criarItens(
-            prefixo = "Combo",
-            quantidade = 4,
-            base = 400,
-        ),
-        estabelecimentos = criarItens(
-            prefixo = "Estabelecimento parceiro",
-            quantidade = 4,
-            base = 500,
-        ),
-        eventos = criarItens(
-            prefixo = "Evento realizado",
-            quantidade = 4,
-            base = 600,
-        ),
-    )
 }

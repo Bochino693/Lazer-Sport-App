@@ -15,15 +15,14 @@ android {
     defaultConfig {
         applicationId = "com.example.lazer_sport_app"
         minSdk = 24
-        // targetSdk ALINHADO com a imagem do emulador (API 35).
-        // Com 37 sobre uma imagem 35 o System UI trava: o sistema
-        // aplica regras de janela que aquela imagem nao implementa.
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // O app instalado pelo Android Studio também usa a API real.
+        // 10.0.2.2 só funcionaria em emulador com Django local aberto.
         buildConfigField(
             "String",
             "BASE_URL",
@@ -33,14 +32,10 @@ android {
 
     buildTypes {
         debug {
-            // 10.0.2.2 = sua maquina vista de dentro do emulador.
-            // Em celular fisico troque pelo IP da LAN.
-            buildConfigField(
-                "String",
-                "BASE_URL",
-                "\"http://10.0.2.2:8000/api/v1/\"",
-            )
+            // Não sobrescrever BASE_URL.
+            // Assim celular físico e emulador consultam o site publicado.
         }
+
         release {
             isMinifyEnabled = false
         }
@@ -49,8 +44,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-        // viewBinding e dataBinding removidos: o app e 100% Compose.
-        // Ligados, geravam classes pra nada e engordavam cada build.
     }
 
     compileOptions {
