@@ -24,8 +24,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,6 +60,15 @@ import com.example.lazer_sport_app.ui.theme.TextoMedio
 // O que a tela desenha, nao o que a API manda. Ficam aqui porque
 // catalogo, pecas, eventos e estabelecimentos usam os mesmos tipos.
 
+enum class TipoItemVitrine {
+    BRINQUEDO,
+    PECA,
+    COMBO,
+    PROMOCAO,
+    ESTABELECIMENTO,
+    EVENTO,
+}
+
 data class ItemVitrine(
     val id: Int,
     val nome: String,
@@ -63,6 +77,9 @@ data class ItemVitrine(
     val selo: String? = null,
     val avaliacao: String? = null,
     val descricao: String? = null,
+    val disponivelParaCompra: Boolean = false,
+    val tipo: TipoItemVitrine = TipoItemVitrine.BRINQUEDO,
+    val demonstracao: Boolean = false,
 )
 
 data class CategoriaVitrine(
@@ -87,6 +104,8 @@ data class ConteudoMenu(
 fun CartaoItem(
     item: ItemVitrine,
     aoClicar: () -> Unit,
+    aoAdicionarCarrinho: (ItemVitrine) -> Unit = {},
+    aoConsultarPreco: (ItemVitrine) -> Unit = {},
     modifier: Modifier = Modifier,
     largura: Dp? = 180.dp,
 ) {
@@ -94,7 +113,7 @@ fun CartaoItem(
         modifier = modifier
             .then(if (largura != null) Modifier.width(largura) else Modifier)
             .vidro(raio = RaioCard, intensidade = 0.07f)
-            .clickable(onClick = aoClicar),
+            .clickable(enabled = !item.demonstracao, onClick = aoClicar),
     ) {
         Box {
             AsyncImage(
@@ -137,14 +156,92 @@ fun CartaoItem(
                 Spacer(Modifier.height(4.dp))
                 SeloAvaliacao(item.avaliacao)
             }
-            if (item.preco != null) {
-                Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
+            if (item.demonstracao) {
+                Text(
+                    text = "Carregando catálogo...",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = TextoMedio,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(42.dp))
+            } else if (item.disponivelParaCompra && item.preco != null) {
                 Text(
                     text = item.preco,
                     style = MaterialTheme.typography.titleMedium,
                     color = AzulDardo,
                     fontWeight = FontWeight.ExtraBold,
                 )
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = { aoAdicionarCarrinho(item) },
+                    shape = RoundedCornerShape(13.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AzulDardo,
+                        contentColor = Color.White,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = null,
+                        modifier = Modifier.size(17.dp),
+                    )
+                    Spacer(Modifier.width(7.dp))
+                    Text(
+                        text = "Adicionar",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                    )
+                }
+            } else {
+                Text(
+                    text = "Preço sob consulta",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = AzulPastel,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(RosaMarca.copy(alpha = 0.16f))
+                        .border(
+                            1.dp,
+                            RosaMarca.copy(alpha = 0.38f),
+                            RoundedCornerShape(13.dp),
+                        )
+                        .clickable { aoConsultarPreco(item) }
+                        .padding(horizontal = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Chat,
+                        contentDescription = null,
+                        tint = RosaMarca,
+                        modifier = Modifier.size(17.dp),
+                    )
+                    Spacer(Modifier.width(7.dp))
+                    Text(
+                        text = "Consultar",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
             }
         }
     }
@@ -270,13 +367,23 @@ fun BolhaCategoria(
 }
 
 @Composable
-fun CarrosselItens(itens: List<ItemVitrine>, aoAbrirItem: (Int) -> Unit) {
+fun CarrosselItens(
+    itens: List<ItemVitrine>,
+    aoAbrirItem: (Int) -> Unit,
+    aoAdicionarCarrinho: (ItemVitrine) -> Unit = {},
+    aoConsultarPreco: (ItemVitrine) -> Unit = {},
+) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 22.dp),
         horizontalArrangement = Arrangement.spacedBy(13.dp),
     ) {
         items(itens, key = { it.id }) { item ->
-            CartaoItem(item = item, aoClicar = { aoAbrirItem(item.id) })
+            CartaoItem(
+                item = item,
+                aoClicar = { aoAbrirItem(item.id) },
+                aoAdicionarCarrinho = aoAdicionarCarrinho,
+                aoConsultarPreco = aoConsultarPreco,
+            )
         }
     }
 }

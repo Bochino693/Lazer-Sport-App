@@ -104,7 +104,7 @@ data class GrupoGaveta(val titulo: String, val itens: List<ItemGaveta>)
 
 val gruposDoMenu: List<GrupoGaveta> = listOf(
     GrupoGaveta(
-        titulo = "LOJA",
+        titulo = "COMPRAR",
         itens = listOf(
             ItemGaveta("Início", Icons.Filled.Home, ROTA_MENU, AzulPastel),
             ItemGaveta(
@@ -114,28 +114,30 @@ val gruposDoMenu: List<GrupoGaveta> = listOf(
                 AzulVivo,
             ),
             ItemGaveta(
+                "Peças de reposição",
+                Icons.Filled.Build,
+                rotaLista(FonteLista.PECAS),
+                AzulDardo,
+            ),
+            ItemGaveta("Combos", Icons.Filled.Star, rotaLista(FonteLista.COMBOS), Amarelo),
+            ItemGaveta(
                 "Promoções",
                 Icons.Filled.LocalOffer,
                 rotaLista(FonteLista.PROMOCOES),
                 RosaMarca,
             ),
-            ItemGaveta("Combos", Icons.Filled.Star, rotaLista(FonteLista.COMBOS), Amarelo),
+            ItemGaveta("Carrinho", Icons.Filled.ShoppingCart, ROTA_CARRINHO, AzulVivo),
         ),
     ),
     GrupoGaveta(
-        titulo = "SERVIÇOS",
+        titulo = "ATENDIMENTO",
         itens = listOf(
-            ItemGaveta(
-                "Peças de Reposição",
-                Icons.Filled.Build,
-                rotaLista(FonteLista.PECAS),
-                AzulDardo,
-            ),
             ItemGaveta("Manutenções", Icons.Filled.Handyman, ROTA_MANUTENCAO, RosaEscuro),
+            ItemGaveta("Fale com um especialista", Icons.Filled.SupportAgent, ROTA_CONTATO, AzulDardo),
         ),
     ),
     GrupoGaveta(
-        titulo = "INSTITUCIONAL",
+        titulo = "CONHEÇA A LAZER & SPORT",
         itens = listOf(
             ItemGaveta(
                 "Estabelecimentos",
@@ -149,7 +151,6 @@ val gruposDoMenu: List<GrupoGaveta> = listOf(
                 rotaLista(FonteLista.EVENTOS),
                 RosaMarca,
             ),
-            ItemGaveta("Fale conosco", Icons.Filled.SupportAgent, ROTA_CONTATO, AzulDardo),
         ),
     ),
 )
@@ -183,7 +184,9 @@ fun GavetaLazerSport(
                 estaLogado = estaLogado,
                 nomeUsuario = nomeUsuario,
                 aoFechar = aoFechar,
-                aoAbrirConta = { aoEscolher(ROTA_CONTA) },
+                aoAbrirConta = {
+                    aoEscolher(if (estaLogado) ROTA_CONTA else ROTA_LOGIN)
+                },
             )
 
             Spacer(Modifier.height(6.dp))
@@ -203,9 +206,6 @@ fun GavetaLazerSport(
 
             if (estaLogado) {
                 TituloGrupo("MINHA CONTA")
-                LinhaGaveta(
-                    ItemGaveta("Carrinho", Icons.Filled.ShoppingCart, ROTA_CARRINHO, AzulVivo),
-                ) { aoEscolher(ROTA_CARRINHO) }
                 LinhaGaveta(
                     ItemGaveta(
                         "Meus pedidos",
@@ -303,9 +303,12 @@ private fun CabecalhoGaveta(
         }
 
         Column(modifier = Modifier.padding(20.dp)) {
-            Spacer(Modifier.height(20.dp))
-            LogoCompleta(largura = 180.dp)
             Spacer(Modifier.height(16.dp))
+            LogoComNome(
+                tamanhoSimbolo = 54.dp,
+                mostrarAssinatura = true,
+            )
+            Spacer(Modifier.height(18.dp))
 
             Row(
                 modifier = Modifier
@@ -315,7 +318,7 @@ private fun CabecalhoGaveta(
                         raio = 16.dp,
                         intensidade = 0.16f,
                     )
-                    .clickable(enabled = estaLogado, onClick = aoAbrirConta)
+                    .clickable(onClick = aoAbrirConta)
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -342,7 +345,7 @@ private fun CabecalhoGaveta(
                         text = if (estaLogado) {
                             "Ver minha conta"
                         } else {
-                            "Entre para pedir e acompanhar"
+                            "Toque para entrar ou criar sua conta"
                         },
                         color = TextoMedio,
                         style = MaterialTheme.typography.labelSmall,

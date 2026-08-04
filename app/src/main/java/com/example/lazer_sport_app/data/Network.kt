@@ -22,6 +22,7 @@ import com.example.lazer_sport_app.BuildConfig
 import com.example.lazer_sport_app.ui.components.CategoriaVitrine
 import com.example.lazer_sport_app.ui.components.ConteudoMenu
 import com.example.lazer_sport_app.ui.components.ItemVitrine
+import com.example.lazer_sport_app.ui.components.TipoItemVitrine
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -92,7 +93,30 @@ data class BrinquedoDto(
     val valor: String? = null,
     val avaliacao: String? = null,
     val imagem: String? = null,
-    @SerialName("exibir_na_loja") val exibirNaLoja: Boolean = true,
+    @SerialName("exibir_na_loja") val exibirNaLoja: Boolean = false,
+)
+
+@Serializable
+data class ImagemPecaDto(
+    val id: Int,
+    val posicao: String? = null,
+    val imagem: String? = null,
+)
+
+@Serializable
+data class PecaDto(
+    val id: Int,
+    val nome: String = "",
+    val descricao: String? = null,
+    val preco: String? = null,
+    val imagens: List<ImagemPecaDto> = emptyList(),
+)
+
+@Serializable
+data class DimensoesDto(
+    @SerialName("altura_m") val alturaM: String? = null,
+    @SerialName("largura_m") val larguraM: String? = null,
+    @SerialName("profundidade_m") val profundidadeM: String? = null,
 )
 
 /** Detalhe: campos extras sao opcionais pra funcionar com o serializer
@@ -106,10 +130,9 @@ data class BrinquedoDetalheDto(
     val avaliacao: String? = null,
     val imagem: String? = null,
     val voltz: String? = null,
-    @SerialName("altura_m") val alturaM: String? = null,
-    @SerialName("largura_m") val larguraM: String? = null,
-    @SerialName("profundidade_m") val profundidadeM: String? = null,
+    val dimensoes: DimensoesDto? = null,
     val categorias: List<CategoriaDto> = emptyList(),
+    @SerialName("exibir_na_loja") val exibirNaLoja: Boolean = false,
 )
 
 @Serializable
@@ -189,7 +212,7 @@ interface ApiService {
     suspend fun pecas(
         @Query("page") pagina: Int = 1,
         @Query("busca") busca: String? = null,
-    ): Paginado<BrinquedoDto>
+    ): Paginado<PecaDto>
 
     @GET("estabelecimentos/")
     suspend fun estabelecimentos(
@@ -420,7 +443,9 @@ class CatalogoRepository @Inject constructor(
         val combosA = async { runCatching { api.combos(1).results }.getOrDefault(emptyList()) }
         val promosA = async { runCatching { api.promocoes(1).results }.getOrDefault(emptyList()) }
 
-        val brinquedos = brinquedosA.await().filter { it.exibirNaLoja }
+        // Todos os brinquedos ativos pertencem ao catálogo público. O campo
+        // exibir_na_loja define apenas se há compra direta ou orçamento.
+        val brinquedos = brinquedosA.await()
         val promocoesApi = promosA.await()
 
         ConteudoMenu(
@@ -459,7 +484,7 @@ class CatalogoRepository @Inject constructor(
                     busca = termo,
                 )
                 PaginaVitrine(
-                    p.results.filter { it.exibirNaLoja }.map { it.paraVitrine() },
+                    p.results.map { it.paraVitrine() },
                     p.next != null,
                 )
             }
@@ -521,10 +546,25 @@ internal fun CategoriaDto.paraVitrine() = CategoriaVitrine(
 internal fun BrinquedoDto.paraVitrine(selo: String? = null) = ItemVitrine(
     id = id,
     nome = nome,
-    preco = valor?.let { formatarReal(it) },
+    preco = valor
+        ?.takeIf { exibirNaLoja && it.valorPositivo() }
+        ?.let { formatarReal(it) },
     imagemUrl = imagem,
-    selo = selo,
+    selo = selo ?: if (exibirNaLoja && valor.valorPositivo()) "LOJA" else "SOB CONSULTA",
     avaliacao = avaliacao?.takeIf { it.isNotBlank() },
+    disponivelParaCompra = exibirNaLoja && valor.valorPositivo(),
+    tipo = TipoItemVitrine.BRINQUEDO,
+)
+
+internal fun PecaDto.paraVitrine() = ItemVitrine(
+    id = id,
+    nome = nome,
+    preco = preco?.takeIf { it.valorPositivo() }?.let { formatarReal(it) },
+    imagemUrl = imagens.firstOrNull()?.imagem,
+    descricao = descricao?.takeIf { it.isNotBlank() },
+    selo = "PEÇA",
+    disponivelParaCompra = preco.valorPositivo(),
+    tipo = TipoItemVitrine.PECA,
 )
 
 internal fun EstabelecimentoDto.paraVitrine() = ItemVitrine(
@@ -546,6 +586,8 @@ internal fun ComboDto.paraVitrine() = ItemVitrine(
     preco = valor?.let { formatarReal(it) },
     imagemUrl = imagem,
     selo = "COMBO",
+    disponivelParaCompra = valor.valorPositivo(),
+    tipo = TipoItemVitrine.COMBO,
 )
 
 internal fun PromocaoDto.paraVitrine() = ItemVitrine(
@@ -554,13 +596,23 @@ internal fun PromocaoDto.paraVitrine() = ItemVitrine(
     preco = preco?.let { formatarReal(it) },
     imagemUrl = imagem,
     selo = "OFERTA",
+    disponivelParaCompra = preco.valorPositivo(),
+    tipo = TipoItemVitrine.PROMOCAO,
 )
+
+private fun String?.valorPositivo(): Boolean =
+    this?.replace(",", ".")
+        ?.toDoubleOrNull()
+        ?.let { it > 0.0 }
+        ?: false
 
 /** O DRF manda DecimalField como string ("1250.00"). */
 internal fun formatarReal(bruto: String): String {
-    val numero = bruto.replace(",", ".").toDoubleOrNull() ?: return bruto
-    val inteiro = numero.toLong()
-    val centavos = ((numero - inteiro) * 100).toInt()
-    val comPontos = inteiro.toString().reversed().chunked(3).joinToString(".").reversed()
-    return "R$ %s,%02d".format(comPontos, centavos)
+    val numero = bruto.replace(",", ".").toBigDecimalOrNull() ?: return bruto
+    val normalizado = numero.setScale(2, java.math.RoundingMode.HALF_UP)
+    val partes = normalizado.toPlainString().split(".")
+    val inteiro = partes.first()
+    val centavos = partes.getOrElse(1) { "00" }.padEnd(2, '0').take(2)
+    val comPontos = inteiro.reversed().chunked(3).joinToString(".").reversed()
+    return "R$ $comPontos,$centavos"
 }
