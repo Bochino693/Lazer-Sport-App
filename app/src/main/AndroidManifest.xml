@@ -30,15 +30,21 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.LazerSport_APP"
-            android:windowSoftInputMode="adjustResize">
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.LazerSportApp">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Retorno do login social: lazersport://auth?token=... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="lazersport" android:host="auth" />
+            </intent-filter>
         </activity>
 
     </application>

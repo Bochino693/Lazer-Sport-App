@@ -1,27 +1,16 @@
-// Todo o roteamento do app.
+// Roteamento + sessão + estado da API.
 //
-// O QUE MUDOU: sumiram os placeholder() e o objeto Rotas. As rotas
-// agora sao as constantes de GavetaMenu.kt (ROTA_*) + rotaLista(),
-// que e o que MenuScreen e a gaveta ja chamavam -- antes clicar em
-// qualquer item da gaveta caia em rota nao registrada.
-//
-// FLUXO DE ABERTURA:
-//   token salvo    -> MENU
-//   modo visitante -> MENU
-//   nenhum         -> BEM_VINDO
+// A abertura agora é ABERTURA -> (BEM_VINDO | MENU). A consulta a
+// /status/ acontece lá e vale pra sessão inteira: quem decide o que
+// aparece na gaveta e no menu é o resultado dela, não um 404 tardio.
 
 package com.example.lazer_sport_app.ui.navigation
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -33,7 +22,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lazer_sport_app.data.AuthRepository
 import com.example.lazer_sport_app.data.CarrinhoRepository
+import com.example.lazer_sport_app.data.EstadoApi
 import com.example.lazer_sport_app.data.FonteLista
+import com.example.lazer_sport_app.data.LoginSocialRepository
+import com.example.lazer_sport_app.data.StatusRepository
+import com.example.lazer_sport_app.ui.abertura.AberturaScreen
 import com.example.lazer_sport_app.ui.carrinho.CarrinhoScreen
 import com.example.lazer_sport_app.ui.conta.ContaScreen
 import com.example.lazer_sport_app.ui.conta.PedidosScreen
@@ -55,36 +48,32 @@ import com.example.lazer_sport_app.ui.menu.ROTA_MENU
 import com.example.lazer_sport_app.ui.menu.ROTA_PEDIDOS
 import com.example.lazer_sport_app.ui.menu.ROTA_REGISTRO
 import com.example.lazer_sport_app.ui.menu.rotaLista
-import com.example.lazer_sport_app.ui.theme.AzulDardo
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-// ============================================================
-// ROTAS EXTRAS (as demais vem de GavetaMenu.kt)
-// ============================================================
-
+const val ROTA_ABERTURA = "abertura"
 const val ROTA_BEM_VINDO = "bem_vindo"
 const val ROTA_LISTA = "lista/{fonte}/{filtro}"
 const val ROTA_DETALHE = "detalhe/{id}"
 
 fun rotaDetalhe(id: Int) = "detalhe/$id"
 
-// ============================================================
-// SESSAO
-// ============================================================
-
 enum class Entrada { MENU, BEM_VINDO }
 
 @HiltViewModel
 class SessaoViewModel @Inject constructor(
     private val repositorio: AuthRepository,
+    private val loginSocial: LoginSocialRepository,
+    statusRepository: StatusRepository,
     carrinho: CarrinhoRepository,
 ) : ViewModel() {
+
+    val estadoApi: StateFlow<EstadoApi> = statusRepository.estado
 
     val nomeUsuario: StateFlow<String?> = repositorio.nomeUsuario
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -95,11 +84,12 @@ class SessaoViewModel @Inject constructor(
     val itensNoCarrinho: StateFlow<Int> = carrinho.quantidade
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    /** null = ainda lendo o DataStore. */
     val entrada: StateFlow<Entrada?> =
         combine(repositorio.estaLogado, repositorio.modoVisitante) { logado, visitante ->
             if (logado || visitante) Entrada.MENU else Entrada.BEM_VINDO
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun urlLoginSocial(provedor: String) = loginSocial.urlEntrada(provedor)
 
     fun continuarSemLogin(aoConcluir: () -> Unit) {
         viewModelScope.launch {
@@ -108,10 +98,6 @@ class SessaoViewModel @Inject constructor(
         }
     }
 }
-
-// ============================================================
-// GRAFO
-// ============================================================
 
 @Composable
 fun NavegacaoApp(
@@ -122,18 +108,20 @@ fun NavegacaoApp(
     val logado by sessaoViewModel.estaLogado.collectAsState()
     val nome by sessaoViewModel.nomeUsuario.collectAsState()
     val noCarrinho by sessaoViewModel.itensNoCarrinho.collectAsState()
+    val api by sessaoViewModel.estadoApi.collectAsState()
     val uriHandler = LocalUriHandler.current
 
-    if (entrada == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = AzulDardo)
+    fun irParaInicio() {
+        val destino = if (entrada == Entrada.BEM_VINDO) ROTA_BEM_VINDO else ROTA_MENU
+        navController.navigate(destino) {
+            popUpTo(ROTA_ABERTURA) { inclusive = true }
+            launchSingleTop = true
         }
-        return
     }
 
     fun irParaMenu() {
         navController.navigate(ROTA_MENU) {
-            popUpTo(ROTA_BEM_VINDO) { inclusive = true }
+            popUpTo(ROTA_ABERTURA) { inclusive = true }
             launchSingleTop = true
         }
     }
@@ -146,12 +134,20 @@ fun NavegacaoApp(
         navController.navigate(ROTA_LOGIN) { launchSingleTop = true }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = if (entrada == Entrada.MENU) ROTA_MENU else ROTA_BEM_VINDO,
-    ) {
+    // O deep link do Google chega pelo TokenStore: quando `logado` vira
+    // true e a tela atual ainda é de entrada, o app já pula pro menu.
+    LaunchedEffect(logado) {
+        val atual = navController.currentDestination?.route
+        if (logado && (atual == ROTA_LOGIN || atual == ROTA_BEM_VINDO || atual == ROTA_REGISTRO)) {
+            irParaMenu()
+        }
+    }
 
-        // ---------------- ENTRADA ----------------
+    NavHost(navController = navController, startDestination = ROTA_ABERTURA) {
+
+        composable(ROTA_ABERTURA) {
+            AberturaScreen(aoContinuar = { irParaInicio() })
+        }
 
         composable(ROTA_BEM_VINDO) {
             BemVindoScreen(
@@ -159,9 +155,9 @@ fun NavegacaoApp(
                 aoCriarConta = { navController.navigate(ROTA_REGISTRO) },
                 aoContinuarSemLogin = { sessaoViewModel.continuarSemLogin { irParaMenu() } },
                 aoContinuarComGoogle = {
-                    uriHandler.openUri(
-                        "https://www.lazersport.com.br/accounts/google/login/?process=login"
-                    )
+                    // ERA a URL do site (o token nunca voltava). Agora é o
+                    // fluxo /auth/app/entrar/, que devolve pelo deep link.
+                    uriHandler.openUri(sessaoViewModel.urlLoginSocial("google"))
                 },
             )
         }
@@ -179,13 +175,9 @@ fun NavegacaoApp(
             RegistroScreen(
                 aoConcluir = { irParaMenu() },
                 aoVoltar = { navController.popBackStack() },
-                aoJaTenhoConta = {
-                    navController.navigate(ROTA_LOGIN) { launchSingleTop = true }
-                },
+                aoJaTenhoConta = { navController.navigate(ROTA_LOGIN) { launchSingleTop = true } },
             )
         }
-
-        // ---------------- MENU ----------------
 
         composable(ROTA_MENU) {
             val menuViewModel: MenuViewModel = hiltViewModel()
@@ -200,36 +192,31 @@ fun NavegacaoApp(
 
             MenuScreen(
                 conteudo = estado.conteudo,
+                carregando = estado.carregando,
                 itensNoCarrinho = noCarrinho,
                 estaLogado = logado,
                 nomeUsuario = nome,
+                saudeApi = api.saude,
+                recursosDisponiveis = api.recursos,
                 aoNavegar = { rota -> navController.navigate(rota) { launchSingleTop = true } },
                 aoAbrirItem = { id -> navController.navigate(rotaDetalhe(id)) },
             )
         }
 
-        // ---------------- LISTAS ----------------
-
         composable(ROTA_LISTA) {
             ListaScreen(
                 aoVoltar = { navController.popBackStack() },
                 aoAbrirBrinquedo = { id -> navController.navigate(rotaDetalhe(id)) },
-                aoIrCarrinho = {
-                    navController.navigate(ROTA_CARRINHO) { launchSingleTop = true }
-                },
+                aoIrCarrinho = { navController.navigate(ROTA_CARRINHO) { launchSingleTop = true } },
             )
         }
 
         composable(ROTA_DETALHE) {
             DetalheScreen(
                 aoVoltar = { navController.popBackStack() },
-                aoIrCarrinho = {
-                    navController.navigate(ROTA_CARRINHO) { launchSingleTop = true }
-                },
+                aoIrCarrinho = { navController.navigate(ROTA_CARRINHO) { launchSingleTop = true } },
             )
         }
-
-        // ---------------- COMPRA ----------------
 
         composable(ROTA_CARRINHO) {
             CarrinhoScreen(
@@ -246,8 +233,6 @@ fun NavegacaoApp(
             )
         }
 
-        // ---------------- ATENDIMENTO ----------------
-
         composable(ROTA_MANUTENCAO) {
             ManutencaoScreen(
                 aoVoltar = { navController.popBackStack() },
@@ -258,8 +243,6 @@ fun NavegacaoApp(
         composable(ROTA_CONTATO) {
             ContatoScreen(aoVoltar = { navController.popBackStack() })
         }
-
-        // ---------------- CONTA ----------------
 
         composable(ROTA_CONTA) {
             ContaScreen(
