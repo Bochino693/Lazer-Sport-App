@@ -255,7 +255,10 @@ private fun Aviso(
             Icon(icone, contentDescription = null, tint = cor, modifier = Modifier.size(19.dp))
         }
         Spacer(Modifier.width(13.dp))
-        Column(Modifier.width(0.dp).then(Modifier.fillMaxWidth())) {
+        // O width(0.dp) antigo espremia o texto em uma coluna de zero
+        // pixels, fazendo cada letra aparecer em uma linha. O weight ocupa
+        // somente o espaço restante ao lado do ícone e continua responsivo.
+        Column(Modifier.weight(1f)) {
             Text(
                 text = titulo,
                 color = Color.White,
@@ -268,5 +271,4 @@ private fun Aviso(
             )
         }
     }
-    Spacer(Modifier.height(0.dp))
 }

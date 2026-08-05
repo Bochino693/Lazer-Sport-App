@@ -38,6 +38,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -78,6 +80,9 @@ data class UsuarioDto(
 
 @Serializable
 data class AuthResponse(val token: String, val usuario: UsuarioDto)
+
+@Serializable
+private data class ErroApi(val detail: String? = null)
 
 @Serializable
 data class CategoriaDto(
@@ -354,6 +359,7 @@ sealed interface Resultado<out T> {
 class AuthRepository @Inject constructor(
     private val api: ApiService,
     private val tokenStore: TokenStore,
+    private val json: Json,
 ) {
     val estaLogado: Flow<Boolean> = tokenStore.token.map { !it.isNullOrBlank() }
     val nomeUsuario: Flow<String?> = tokenStore.nome
@@ -396,14 +402,30 @@ class AuthRepository @Inject constructor(
     }
 
     private fun traduzirErro(e: Exception): String = when {
-        e is retrofit2.HttpException && e.code() == 401 -> "Login ou senha inválidos."
-        e is retrofit2.HttpException && e.code() == 400 -> "Confira os dados informados."
-        e is retrofit2.HttpException && e.code() >= 500 ->
-            "O servidor está fora do ar. Tente em instantes."
+        e is retrofit2.HttpException -> mensagemDaApi(e) ?: when (e.code()) {
+            400 -> "Confira os dados informados."
+            401 -> "Login ou senha inválidos."
+            403 -> "Esta conta não tem permissão para entrar."
+            in 500..599 -> "O servidor está fora do ar. Tente em instantes."
+            else -> "Não foi possível entrar (erro ${e.code()})."
+        }
         e is java.net.UnknownHostException || e is java.net.ConnectException ->
             "Sem conexão. Verifique sua internet."
         e is java.net.SocketTimeoutException -> "A conexão demorou demais. Tente de novo."
+        e is SerializationException ->
+            "A API respondeu em um formato inesperado. Atualize o aplicativo."
         else -> "Algo deu errado. Tente novamente."
+    }
+
+    /** Mostra a mensagem segura enviada pela API, sem expor HTML ou stack trace. */
+    private fun mensagemDaApi(e: retrofit2.HttpException): String? {
+        val corpo = runCatching {
+            e.response()?.errorBody()?.string()
+        }.getOrNull()?.takeIf { it.isNotBlank() } ?: return null
+
+        return runCatching {
+            json.decodeFromString<ErroApi>(corpo).detail?.trim()
+        }.getOrNull()?.takeIf { it.isNotBlank() }
     }
 }
 

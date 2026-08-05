@@ -167,6 +167,9 @@ fun NavegacaoApp(
                 aoEntrar = { irParaMenu() },
                 aoCriarConta = { navController.navigate(ROTA_REGISTRO) },
                 aoEntrarSemConta = { sessaoViewModel.continuarSemLogin { irParaMenu() } },
+                aoContinuarComGoogle = {
+                    uriHandler.openUri(sessaoViewModel.urlLoginSocial("google"))
+                },
                 aoVoltar = { navController.popBackStack() },
             )
         }

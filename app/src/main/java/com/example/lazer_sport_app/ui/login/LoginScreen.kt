@@ -54,6 +54,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.lazer_sport_app.data.AuthRepository
 import com.example.lazer_sport_app.data.Resultado
 import com.example.lazer_sport_app.ui.components.BotaoPrincipal
+import com.example.lazer_sport_app.ui.components.BotaoVidro
 import com.example.lazer_sport_app.ui.components.CampoLazer
 import com.example.lazer_sport_app.ui.components.Kicker
 import com.example.lazer_sport_app.ui.menu.PainelMarcaEntrada
@@ -82,7 +83,7 @@ data class LoginUiState(
     val podeEnviar: Boolean
         get() =
             login.isNotBlank() &&
-                    senha.length >= 4 &&
+                    senha.isNotBlank() &&
                     !carregando
 }
 
@@ -161,6 +162,7 @@ fun LoginScreen(
     aoEntrar: () -> Unit,
     aoCriarConta: () -> Unit,
     aoEntrarSemConta: () -> Unit,
+    aoContinuarComGoogle: () -> Unit,
     aoVoltar: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
@@ -354,6 +356,14 @@ fun LoginScreen(
                     habilitado = estado.podeEnviar,
                     carregando = estado.carregando,
                     cor = RosaMarca,
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                BotaoVidro(
+                    texto = "Continuar com Google",
+                    aoClicar = aoContinuarComGoogle,
+                    conteudoInicial = { MarcaGoogle() },
                 )
 
                 Spacer(Modifier.height(8.dp))
