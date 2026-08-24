@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Assinatura de release: nunca no repositorio.
+keystore.properties
+*.jks
+*.keystore
+local.properties

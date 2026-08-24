@@ -14,6 +14,9 @@
     <color name="ls_superficie">#FFFFFF</color>
     <color name="ls_erro_fundo">#FDECEC</color>
     <color name="ls_sucesso_fundo">#EAF8F0</color>
+    <!-- Fundo do ícone adaptativo. Separado de "white" porque é uma
+         decisão de marca, não uma cor de interface. -->
+    <color name="ls_icone_fundo">#FFFFFF</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
 </resources>
