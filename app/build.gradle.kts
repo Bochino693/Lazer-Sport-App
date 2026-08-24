@@ -48,11 +48,12 @@ android {
     fun chave(nome: String, ambiente: String): String? =
         (chaves.getProperty(nome) ?: System.getenv(ambiente))?.takeIf { it.isNotBlank() }
 
+    val caminhoChave = chave("storeFile", "LAZER_KEYSTORE")
+
     signingConfigs {
         create("release") {
-            val caminho = chave("storeFile", "LAZER_KEYSTORE")
-            if (caminho != null) {
-                storeFile = file(caminho)
+            if (caminhoChave != null) {
+                storeFile = file(caminhoChave)
                 storePassword = chave("storePassword", "LAZER_KEYSTORE_PASSWORD")
                 keyAlias = chave("keyAlias", "LAZER_KEY_ALIAS")
                 keyPassword = chave("keyPassword", "LAZER_KEY_PASSWORD")
@@ -82,7 +83,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.getByName("release")
+            // So amarra a assinatura quando a chave existe de verdade.
+            // Amarrar sempre fazia o Gradle parar na tarefa de validacao
+            // com storeFile nulo -- ou seja, em maquina sem a chave o
+            // release nem chegava a ser gerado, ao contrario do que diz o
+            // comentario la em cima. Sem chave, sai APK sem assinatura.
+            if (caminhoChave != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
