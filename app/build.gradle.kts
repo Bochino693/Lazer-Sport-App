@@ -7,17 +7,19 @@ plugins {
 }
 
 android {
-    namespace = "com.example.lazer_sport_app"
+    namespace = "br.com.lazersport.app"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.lazer_sport_app"
+        // Definitivo: a Play Store recusa "com.example.*" e o
+        // applicationId nao pode mudar depois da primeira publicacao.
+        applicationId = "br.com.lazersport.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -30,14 +32,55 @@ android {
         )
     }
 
+    // Assinatura de release lida de variaveis de ambiente ou de
+    // keystore.properties, nunca do repositorio: chave versionada e chave
+    // perdida. Sem os dados, o build de release continua sendo gerado sem
+    // assinatura, e o Android Studio avisa na hora de publicar.
+    val arquivoChaves = rootProject.file("keystore.properties")
+    val chaves = java.util.Properties().apply {
+        if (arquivoChaves.exists()) {
+            arquivoChaves.inputStream().use { load(it) }
+        }
+    }
+
+    fun chave(nome: String, ambiente: String): String? =
+        (chaves.getProperty(nome) ?: System.getenv(ambiente))?.takeIf { it.isNotBlank() }
+
+    signingConfigs {
+        create("release") {
+            val caminho = chave("storeFile", "LAZER_KEYSTORE")
+            if (caminho != null) {
+                storeFile = file(caminho)
+                storePassword = chave("storePassword", "LAZER_KEYSTORE_PASSWORD")
+                keyAlias = chave("keyAlias", "LAZER_KEY_ALIAS")
+                keyPassword = chave("keyPassword", "LAZER_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             // Não sobrescrever BASE_URL.
             // Assim celular físico e emulador consultam o site publicado.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
 
         release {
+            // R8 fica DESLIGADO ate alguem rodar um APK de release de verdade
+            // no aparelho. Retrofit, OkHttp, Hilt e kotlinx.serialization
+            // trazem as proprias regras, e proguard-rules.pro cobre o resto,
+            // mas ofuscacao quebra em runtime, nao no build: ligar sem testar
+            // significa descobrir o problema com o app ja publicado.
+            // Para ligar: troque os dois para true, gere o release, instale e
+            // percorra login, catalogo, carrinho e checkout.
             isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
