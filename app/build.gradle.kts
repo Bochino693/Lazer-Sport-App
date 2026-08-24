@@ -1,3 +1,8 @@
+// Import no topo de proposito: dentro do bloco `android { }` o nome `java`
+// resolve para a extensao do plugin Java, e nao para o pacote java.*, entao
+// `java.util.Properties()` falha com "Unresolved reference 'util'".
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -5,6 +10,25 @@ plugins {
     id("com.android.legacy-kapt")
     id("com.google.dagger.hilt.android")
 }
+
+// Assinatura de release lida de keystore.properties ou de variaveis de
+// ambiente, nunca do repositorio: chave versionada e chave perdida.
+// Fica no nivel do script, e nao dentro de `android { }`, para nenhum nome
+// de extensao do Gradle sombrear o que se usa aqui.
+val arquivoDeChaves = rootProject.file("keystore.properties")
+
+val chavesDeAssinatura = Properties().apply {
+    if (arquivoDeChaves.exists()) {
+        arquivoDeChaves.inputStream().use { load(it) }
+    }
+}
+
+fun chaveDeAssinatura(nome: String, ambiente: String): String? =
+    (chavesDeAssinatura.getProperty(nome) ?: System.getenv(ambiente))
+        ?.takeIf { it.isNotBlank() }
+
+val temChaveDeAssinatura =
+    chaveDeAssinatura("storeFile", "LAZER_KEYSTORE") != null
 
 android {
     namespace = "br.com.lazersport.app"
@@ -32,28 +56,16 @@ android {
         )
     }
 
-    // Assinatura de release lida de variaveis de ambiente ou de
-    // keystore.properties, nunca do repositorio: chave versionada e chave
-    // perdida. Sem os dados, o build de release continua sendo gerado sem
-    // assinatura, e o Android Studio avisa na hora de publicar.
-    val arquivoChaves = rootProject.file("keystore.properties")
-    val chaves = java.util.Properties().apply {
-        if (arquivoChaves.exists()) {
-            arquivoChaves.inputStream().use { load(it) }
-        }
-    }
-
-    fun chave(nome: String, ambiente: String): String? =
-        (chaves.getProperty(nome) ?: System.getenv(ambiente))?.takeIf { it.isNotBlank() }
-
     signingConfigs {
-        create("release") {
-            val caminho = chave("storeFile", "LAZER_KEYSTORE")
-            if (caminho != null) {
-                storeFile = file(caminho)
-                storePassword = chave("storePassword", "LAZER_KEYSTORE_PASSWORD")
-                keyAlias = chave("keyAlias", "LAZER_KEY_ALIAS")
-                keyPassword = chave("keyPassword", "LAZER_KEY_PASSWORD")
+        // So cria a configuracao quando ha chave de verdade. Um
+        // signingConfig com storeFile nulo faz a tarefa de assinatura
+        // falhar no bundleRelease em vez de simplesmente nao assinar.
+        if (temChaveDeAssinatura) {
+            create("release") {
+                storeFile = file(chaveDeAssinatura("storeFile", "LAZER_KEYSTORE")!!)
+                storePassword = chaveDeAssinatura("storePassword", "LAZER_KEYSTORE_PASSWORD")
+                keyAlias = chaveDeAssinatura("keyAlias", "LAZER_KEY_ALIAS")
+                keyPassword = chaveDeAssinatura("keyPassword", "LAZER_KEY_PASSWORD")
             }
         }
     }
@@ -80,7 +92,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.getByName("release")
+            // Sem chave configurada o release sai sem assinatura, e o
+            // Android Studio avisa na hora de publicar. Com chave, assina.
+            if (temChaveDeAssinatura) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
