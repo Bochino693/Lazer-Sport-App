@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -37,7 +39,7 @@ android {
     // perdida. Sem os dados, o build de release continua sendo gerado sem
     // assinatura, e o Android Studio avisa na hora de publicar.
     val arquivoChaves = rootProject.file("keystore.properties")
-    val chaves = java.util.Properties().apply {
+    val chaves = Properties().apply {
         if (arquivoChaves.exists()) {
             arquivoChaves.inputStream().use { load(it) }
         }
