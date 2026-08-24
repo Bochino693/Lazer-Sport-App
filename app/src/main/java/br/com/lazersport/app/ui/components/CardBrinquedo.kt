@@ -398,16 +398,16 @@ fun BolhaCategoria(
                         .clip(CircleShape),
                 )
             } else {
-                // A bolha e pequena e redonda: cabe o simbolo, nao o
-                // logotipo inteiro. Antes era um icone generico do
-                // Material, que nao tem nada a ver com a marca.
+                // Sempre a logotipia completa, nunca a versao recortada.
+                // O recuo maior compensa a arte ser larga: dentro do
+                // circulo ela aparece inteira, sem encostar na borda.
                 Image(
-                    painter = painterResource(R.drawable.ls_simbolo),
+                    painter = painterResource(R.drawable.ls_logo_completa),
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(17.dp),
+                        .padding(horizontal = 8.dp, vertical = 22.dp),
                 )
             }
         }

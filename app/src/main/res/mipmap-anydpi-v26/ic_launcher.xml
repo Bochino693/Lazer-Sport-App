@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ícone adaptativo: fundo branco liso, o alvo da marca no primeiro plano.
-     Branco de propósito — é sobre branco que a marca foi desenhada, e é o
-     que faz o vermelho do alvo saltar na grade do launcher. -->
+<!-- Ícone adaptativo: fundo branco liso, a logotipia completa no primeiro
+     plano — a mesma marca que o app usa por dentro, nunca uma versão
+     recortada. Branco de propósito: é sobre branco que a marca foi
+     desenhada, e é o que faz o vermelho do alvo saltar na grade do
+     launcher.
+
+     A arte fica dentro dos 72dp centrais dos 108dp da tela do ícone. Fora
+     dessa área o launcher pode cortar, e é o que corta a assinatura em
+     aparelhos com máscara redonda. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ls_icone_fundo" />
     <foreground android:drawable="@mipmap/ic_launcher_foreground" />
