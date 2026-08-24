@@ -72,19 +72,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import coil3.compose.AsyncImage
-import br.com.lazersport.app.data.CatalogoRepository
 import br.com.lazersport.app.data.CarrinhoRepository
+import br.com.lazersport.app.data.CatalogoRepository
 import br.com.lazersport.app.data.Contato
 import br.com.lazersport.app.data.FonteLista
+import br.com.lazersport.app.ui.components.BarraBusca
 import br.com.lazersport.app.ui.components.BotaoPrincipal
 import br.com.lazersport.app.ui.components.BotaoVidro
-import br.com.lazersport.app.ui.components.BarraBusca
 import br.com.lazersport.app.ui.components.CartaoItem
 import br.com.lazersport.app.ui.components.CartaoLargo
 import br.com.lazersport.app.ui.components.CategoriaVitrine
 import br.com.lazersport.app.ui.components.EstadoCarregando
 import br.com.lazersport.app.ui.components.EstadoVazio
+import br.com.lazersport.app.ui.components.ImagemItem
 import br.com.lazersport.app.ui.components.ItemVitrine
 import br.com.lazersport.app.ui.components.SeloAvaliacao
 import br.com.lazersport.app.ui.components.TipoItemVitrine
@@ -530,10 +530,11 @@ private fun FolhaItem(
             .padding(bottom = 30.dp),
     ) {
         if (item.imagemUrl != null) {
-            AsyncImage(
-                model = item.imagemUrl,
-                contentDescription = item.nome,
-                contentScale = ContentScale.Fit,
+            ImagemItem(
+                url = item.imagemUrl,
+                descricao = item.nome,
+                escala = ContentScale.Fit,
+                recuoDaMarca = 24.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1.4f)

@@ -57,7 +57,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import coil3.compose.AsyncImage
 import br.com.lazersport.app.data.BrinquedoDetalheDto
 import br.com.lazersport.app.data.CarrinhoRepository
 import br.com.lazersport.app.data.CatalogoRepository
@@ -68,6 +67,7 @@ import br.com.lazersport.app.ui.components.BotaoPrincipal
 import br.com.lazersport.app.ui.components.BotaoVidro
 import br.com.lazersport.app.ui.components.EstadoCarregando
 import br.com.lazersport.app.ui.components.EstadoVazio
+import br.com.lazersport.app.ui.components.ImagemItem
 import br.com.lazersport.app.ui.components.ItemVitrine
 import br.com.lazersport.app.ui.components.Kicker
 import br.com.lazersport.app.ui.components.SeloAvaliacao
@@ -271,10 +271,11 @@ private fun Conteudo(
     ) {
         Spacer(Modifier.height(16.dp))
 
-        AsyncImage(
-            model = item.imagem,
-            contentDescription = item.nome,
-            contentScale = ContentScale.Fit,
+        ImagemItem(
+            url = item.imagem,
+            descricao = item.nome,
+            escala = ContentScale.Fit,
+            recuoDaMarca = 28.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)

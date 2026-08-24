@@ -3,6 +3,7 @@
 
 package br.com.lazersport.app.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,7 +29,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -41,12 +41,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import br.com.lazersport.app.R
 import br.com.lazersport.app.ui.menu.vidro
 import br.com.lazersport.app.ui.theme.Amarelo
 import br.com.lazersport.app.ui.theme.AzulDardo
@@ -55,6 +56,7 @@ import br.com.lazersport.app.ui.theme.RaioCard
 import br.com.lazersport.app.ui.theme.RosaMarca
 import br.com.lazersport.app.ui.theme.TextoForte
 import br.com.lazersport.app.ui.theme.TextoMedio
+import coil3.compose.AsyncImage
 
 // ============ MODELOS DE APRESENTACAO ============
 // O que a tela desenha, nao o que a API manda. Ficam aqui porque
@@ -100,6 +102,13 @@ data class ConteudoMenu(
 
 // ============ CARTOES ============
 
+// Alturas fixas das tres faixas variaveis do card. Sao elas que garantem
+// que dois cards lado a lado terminem na mesma linha, com qualquer
+// combinacao de nome curto/longo, com nota ou sem, a venda ou sob consulta.
+private val ALTURA_AVALIACAO = 20.dp
+private val ALTURA_LINHA_PRECO = 26.dp
+private val ALTURA_ACAO = 42.dp
+
 @Composable
 fun CartaoItem(
     item: ItemVitrine,
@@ -116,12 +125,13 @@ fun CartaoItem(
             .clickable(enabled = !item.demonstracao, onClick = aoClicar),
     ) {
         Box {
-            AsyncImage(
-                model = item.imagemUrl,
-                contentDescription = item.nome,
+            ImagemItem(
+                url = item.imagemUrl,
+                descricao = item.nome,
                 // Fit e nao Crop: voce ja tinha reclamado no site de
                 // brinquedo cortado no card. Aqui a foto aparece inteira.
-                contentScale = ContentScale.Fit,
+                escala = ContentScale.Fit,
+                recuoDaMarca = 14.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
@@ -145,34 +155,77 @@ fun CartaoItem(
             }
         }
         Column(Modifier.padding(12.dp)) {
+            // minLines = 2 e o que emparelha os cards: nome de uma linha
+            // deixava o card mais baixo que o do vizinho, e preco e botao
+            // ficavam em alturas diferentes lado a lado na grade.
             Text(
                 text = item.nome,
                 style = MaterialTheme.typography.titleMedium,
                 color = TextoForte,
+                minLines = 2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (item.avaliacao != null) {
-                Spacer(Modifier.height(4.dp))
-                SeloAvaliacao(item.avaliacao)
+
+            // A linha da avaliacao e sempre reservada, mesmo sem nota:
+            // aparecer so em alguns itens desalinhava a fileira inteira.
+            Spacer(Modifier.height(4.dp))
+            Box(Modifier.height(ALTURA_AVALIACAO)) {
+                if (item.avaliacao != null) {
+                    SeloAvaliacao(item.avaliacao)
+                }
             }
+
             Spacer(Modifier.height(8.dp))
+
+            // A linha do preco tem altura fixa e os tres textos possiveis
+            // ficam alinhados pela base. Sem isso, "R$ 1.250,00" em
+            // titleMedium e "Preco sob consulta" em labelLarge tinham
+            // alturas diferentes e empurravam o botao de cada card para um
+            // lugar -- era isso que deixava a fileira torta.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ALTURA_LINHA_PRECO),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                when {
+                    item.demonstracao -> Text(
+                        text = "Carregando catálogo...",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = TextoMedio,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    item.disponivelParaCompra && item.preco != null -> Text(
+                        text = item.preco,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AzulDardo,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    else -> Text(
+                        text = "Preço sob consulta",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = AzulPastel,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
             if (item.demonstracao) {
-                Text(
-                    text = "Carregando catálogo...",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextoMedio,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(42.dp))
+                // Espaco do botao, para o esqueleto ter a mesma altura do
+                // card de verdade que vai substitui-lo.
+                Spacer(Modifier.height(ALTURA_ACAO))
             } else if (item.disponivelParaCompra && item.preco != null) {
-                Text(
-                    text = item.preco,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AzulDardo,
-                    fontWeight = FontWeight.ExtraBold,
-                )
-                Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = { aoAdicionarCarrinho(item) },
                     shape = RoundedCornerShape(13.dp),
@@ -183,7 +236,7 @@ fun CartaoItem(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(42.dp),
+                        .height(ALTURA_ACAO),
                 ) {
                     Icon(
                         Icons.Filled.AddShoppingCart,
@@ -198,17 +251,10 @@ fun CartaoItem(
                     )
                 }
             } else {
-                Text(
-                    text = "Preço sob consulta",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = AzulPastel,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(10.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(42.dp)
+                        .height(ALTURA_ACAO)
                         .clip(RoundedCornerShape(13.dp))
                         .background(RosaMarca.copy(alpha = 0.16f))
                         .border(
@@ -281,10 +327,11 @@ fun CartaoLargo(
             .vidro(raio = RaioCard, intensidade = 0.05f)
             .clickable(onClick = aoClicar),
     ) {
-        AsyncImage(
-            model = item.imagemUrl,
-            contentDescription = item.nome,
-            contentScale = ContentScale.Crop,
+        ImagemItem(
+            url = item.imagemUrl,
+            descricao = item.nome,
+            escala = ContentScale.Crop,
+            recuoDaMarca = 30.dp,
             modifier = Modifier.fillMaxSize(),
         )
         Box(
@@ -351,7 +398,17 @@ fun BolhaCategoria(
                         .clip(CircleShape),
                 )
             } else {
-                Icon(Icons.Filled.Widgets, contentDescription = null, tint = AzulPastel)
+                // A bolha e pequena e redonda: cabe o simbolo, nao o
+                // logotipo inteiro. Antes era um icone generico do
+                // Material, que nao tem nada a ver com a marca.
+                Image(
+                    painter = painterResource(R.drawable.ls_simbolo),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(17.dp),
+                )
             }
         }
         Spacer(Modifier.height(9.dp))

@@ -58,17 +58,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import coil3.compose.AsyncImage
 import br.com.lazersport.app.data.AuthRepository
 import br.com.lazersport.app.data.CarrinhoRepository
-import br.com.lazersport.app.data.Resultado
 import br.com.lazersport.app.data.Contato
 import br.com.lazersport.app.data.EstadoCarrinho
 import br.com.lazersport.app.data.ItemCarrinho
+import br.com.lazersport.app.data.Resultado
 import br.com.lazersport.app.ui.components.BotaoPrincipal
 import br.com.lazersport.app.ui.components.BotaoVidro
 import br.com.lazersport.app.ui.components.CampoLazer
 import br.com.lazersport.app.ui.components.EstadoVazio
+import br.com.lazersport.app.ui.components.ImagemItem
 import br.com.lazersport.app.ui.components.TopoTela
 import br.com.lazersport.app.ui.menu.fundoNoite
 import br.com.lazersport.app.ui.menu.vidro
@@ -345,10 +345,11 @@ private fun LinhaCarrinho(
                 .background(Color.White.copy(alpha = 0.05f)),
             contentAlignment = Alignment.Center,
         ) {
-            AsyncImage(
-                model = item.imagemUrl,
-                contentDescription = item.nome,
-                contentScale = ContentScale.Fit,
+            ImagemItem(
+                url = item.imagemUrl,
+                descricao = item.nome,
+                escala = ContentScale.Fit,
+                recuoDaMarca = 6.dp,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(5.dp),
