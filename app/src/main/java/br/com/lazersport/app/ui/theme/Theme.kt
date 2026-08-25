@@ -23,29 +23,60 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
 // ============ PALETA (fonte unica de cor do app) ============
-// Azuis institucionais do CSS do site; rosa e azul-dardo amostrados
-// dos pixels da logo (logoofi.png).
+//
+// POR QUE MUDOU: a paleta antiga era azul-quase-preto com brilhos rosa e
+// azul pintados por cima a 6-25% de opacidade. Cor saturada em opacidade
+// baixa sobre fundo escuro nao fica discreta -- fica cinza. O app inteiro
+// vinha lavado, empoeirado, e a queixa de "opaco" e "morto" era isso:
+// nenhuma cor chegava perto da propria saturacao em lugar nenhum.
+//
+// A troca tem duas partes, e a segunda importa mais que a primeira:
+//
+//   1. matizes de fato vivos, com o azul abrindo em violeta e ciano;
+//   2. os brilhos passam a ser compostos em BlendMode.Screen, em
+//      FundoSecoes.kt. Screen soma luz em vez de misturar tinta: o mesmo
+//      ciano que virava cinza-azulado agora acende. Trocar so' os matizes
+//      sem trocar a composicao teria dado outro tom de poeira.
+//
+// O vermelho da marca continua sendo o acento quente, e o azul continua
+// sendo a base -- e' a logo que manda, e ela e' azul e vermelha.
 
-val NoiteTopo = Color(0xFF060E1C)
-val NoiteMeio = Color(0xFF0A1A33)
-val NoiteBase = Color(0xFF07254D)
-val NoiteCartao = Color(0xFF0C1B31)
-val NoiteCampo = Color(0xFF12294A)
+// -- fundos ------------------------------------------------------------
+// A rampa vai de indigo quase preto ate um azul eletrico de verdade. E'
+// essa amplitude que da profundidade: antes os tres tons ficavam todos na
+// mesma faixa escura e a tela parecia chapada.
+val NoiteTopo = Color(0xFF050A22)
+val NoiteMeio = Color(0xFF101C6B)
+val NoiteBase = Color(0xFF2A2FC4)
 
-val AzulProfundo = Color(0xFF004AAD)
-val AzulVivo = Color(0xFF0878F9)
-val AzulDardo = Color(0xFF34BAEC)
-val AzulPastel = Color(0xFF91C2FF)
+// Superficies. Puxadas para o azul, e nao para o cinza: cartao cinza em
+// cima de fundo colorido e' o que mais envelhece uma tela.
+val NoiteCartao = Color(0xFF0E1638)
+val NoiteCampo = Color(0xFF18225C)
 
-val RosaMarca = Color(0xFFEE405E)
-val RosaEscuro = Color(0xFFB43544)
-val Amarelo = Color(0xFFFFC53D)
-val Verde = Color(0xFF16A34A)
+// -- azuis e ciano ------------------------------------------------------
+val AzulProfundo = Color(0xFF2A2FC4)
+val AzulVivo = Color(0xFF3D6BFF)
+/** O ciano de acento. E' ele que carrega a energia da paleta. */
+val AzulDardo = Color(0xFF00E5FF)
+val AzulPastel = Color(0xFFA9C8FF)
 
-val TextoForte = Color(0xFFEAF1FB)
-val TextoMedio = Color(0xFFA9BBD4)
-val TextoFraco = Color(0xFF7489A8)
-val BordaSuave = Color(0xFF25406B)
+// -- quentes ------------------------------------------------------------
+/** Vermelho da marca, agora na saturacao cheia. Acento e alerta. */
+val RosaMarca = Color(0xFFFF2D6F)
+val RosaEscuro = Color(0xFFC41E58)
+/** Fecha o degrade dos botoes principais: vermelho abrindo em laranja. */
+val LaranjaQuente = Color(0xFFFF7A29)
+/** Violeta que liga o azul ao vermelho nos brilhos de fundo. */
+val VioletaNeon = Color(0xFF8B5CF6)
+val Amarelo = Color(0xFFFFCC33)
+val Verde = Color(0xFF22C55E)
+
+// -- texto e bordas -----------------------------------------------------
+val TextoForte = Color(0xFFFFFFFF)
+val TextoMedio = Color(0xFFB9CEF0)
+val TextoFraco = Color(0xFF7E97C4)
+val BordaSuave = Color(0xFF2E45A0)
 
 // ============ RAIOS ============
 val RaioSecao = 28.dp
@@ -60,7 +91,7 @@ private val EsquemaLazer = darkColorScheme(
     onPrimaryContainer = Color.White,
 
     secondary = AzulDardo,
-    onSecondary = Color(0xFF00243D),
+    onSecondary = Color(0xFF00202B),
     secondaryContainer = NoiteCampo,
     onSecondaryContainer = TextoForte,
 
@@ -79,9 +110,9 @@ private val EsquemaLazer = darkColorScheme(
     onError = Color.White,
 
     outline = BordaSuave,
-    outlineVariant = Color(0xFF1A2E4E),
+    outlineVariant = Color(0xFF1E2C6E),
 
-    scrim = Color(0xFF03070F),
+    scrim = Color(0xFF02040E),
 )
 
 // O site usa Manrope. Pra igualar: .ttf em res/font/ e trocar

@@ -3,6 +3,7 @@
 package br.com.lazersport.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,6 +55,7 @@ import br.com.lazersport.app.ui.theme.NoiteCampo
 import br.com.lazersport.app.ui.theme.RaioBotao
 import br.com.lazersport.app.ui.theme.RaioCampo
 import br.com.lazersport.app.ui.theme.RaioSecao
+import br.com.lazersport.app.ui.theme.LaranjaQuente
 import br.com.lazersport.app.ui.theme.RosaMarca
 import br.com.lazersport.app.ui.theme.TextoForte
 import br.com.lazersport.app.ui.theme.TextoFraco
@@ -162,30 +165,58 @@ fun CampoLazer(
 
 // ============ BOTOES ============
 
+/**
+ * Botao principal.
+ *
+ * @param corFim segunda cor do degrade. Quando nao vem, o botao da marca
+ *   (vermelho) abre em laranja e qualquer outra cor fica chapada. Assim o
+ *   botao de acao ganha o degrade sem precisar mexer nas dezenas de
+ *   chamadas espalhadas pelo app, e um botao verde de confirmar continua
+ *   verde, sem virar um arco-iris.
+ */
 @Composable
 fun BotaoPrincipal(
     texto: String,
     aoClicar: () -> Unit,
     modifier: Modifier = Modifier,
     cor: Color = RosaMarca,
+    corFim: Color? = null,
     corTexto: Color = Color.White,
     habilitado: Boolean = true,
     carregando: Boolean = false,
     icone: ImageVector? = null,
 ) {
+    val fim = corFim ?: if (cor == RosaMarca) LaranjaQuente else cor
+    val ativo = habilitado && !carregando
+
     Button(
         onClick = aoClicar,
-        enabled = habilitado && !carregando,
+        enabled = ativo,
         shape = RoundedCornerShape(RaioBotao),
+        // O preenchimento vem do degrade no modifier, entao o Button nao
+        // pinta nada por baixo -- inclusive no estado desligado, senao o
+        // cinza do Material apareceria por cima do degrade.
         colors = ButtonDefaults.buttonColors(
-            containerColor = cor,
+            containerColor = Color.Transparent,
             contentColor = corTexto,
-            disabledContainerColor = cor.copy(alpha = 0.35f),
+            disabledContainerColor = Color.Transparent,
             disabledContentColor = corTexto.copy(alpha = 0.6f),
         ),
+        // O degrade e' pintado no modifier, fora do padding; este aqui
+        // so' impede o texto de encostar na borda quando e' comprido.
+        contentPadding = PaddingValues(horizontal = 18.dp),
         modifier = modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .height(54.dp)
+            .clip(RoundedCornerShape(RaioBotao))
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        cor.copy(alpha = if (ativo) 1f else 0.35f),
+                        fim.copy(alpha = if (ativo) 1f else 0.35f),
+                    ),
+                ),
+            ),
     ) {
         if (carregando) {
             CircularProgressIndicator(
