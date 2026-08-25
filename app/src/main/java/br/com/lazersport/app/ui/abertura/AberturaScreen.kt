@@ -1,35 +1,40 @@
-// TELA DE ABERTURA -- a marca entrando em cena e o estado real da API.
+// TELA DE ABERTURA -- o dardo cravando a marca e o estado real da API.
 //
-// Não é enfeite: é aqui que o app pergunta /status/ e decide o que vai
-// existir na sessão. Sem essa consulta o cliente descobria que a API
-// estava fora só depois de três telas vazias.
+// Nao e' enfeite: e' aqui que o app pergunta /status/ e decide o que vai
+// existir na sessao. Sem essa consulta o cliente descobria que a API
+// estava fora so' depois de tres telas vazias.
 //
-// A cena tem três tempos, e é essa sequência que faz a abertura parecer
-// intencional em vez de uma tela que pisca:
+// A cena e' a marca se montando, e nao uma imagem que aparece:
 //
-//   ENTRADA  a logotipia sobe e chega por mola, passando de leve do
-//            ponto antes de assentar; o resto entra depois dela,
-//            escalonado, para o olho ir primeiro para a marca;
-//   IMPACTO  no quadro em que ela assenta, um anel abre do centro para
-//            fora -- lê como o dardo acertando o alvo, que é o que a
-//            própria logotipia desenha;
-//   RESPIRO  enquanto a API não responde, a marca respira sobre um halo
-//            que pulsa junto e o anel volta a abrir de tempos em tempos,
-//            como um radar saindo do alvo: "estou trabalhando" sem
-//            escrever nada;
-//   SAÍDA    ao ficar pronto, tudo cresce de novo e some junto, e só
-//            então a próxima tela entra. Cortar seco aqui era o que
+//   ALVO     o alvo entra girando de leve e assenta por mola, passando
+//            de raspao do ponto antes de parar;
+//   ARREMESSO  o dardo cruza a tela pelo proprio eixo, de fora do canto
+//            superior direito, acelerando ate' cravar no centro;
+//   IMPACTO  no quadro em que a ponta encosta, o alvo leva o baque --
+//            recua na diagonal do golpe, balanca amortecido e solta dois
+//            aneis do centro para fora; a haste do dardo vibra junto;
+//   NOME     so' depois de cravado o nome sobe por baixo do alvo. Antes
+//            do impacto ele disputaria a atencao com o arremesso;
+//   RESPIRO  enquanto a API nao responde, a marca respira e os aneis
+//            reabrem de tempos em tempos, como um radar saindo do alvo:
+//            "estou trabalhando" sem escrever nada;
+//   SAIDA    ao ficar pronto, tudo cresce de novo e some junto, e so'
+//            entao a proxima tela entra. Cortar seco aqui era o que
 //            fazia a abertura parecer um flash.
 //
-// Os dois crescimentos -- o da entrada e o da saída -- vão na mesma
-// direção de propósito: é isso que faz a passagem parecer contínua.
+// A saida espera o dardo cravar mesmo quando a API responde antes: uma
+// cena de arremesso cortada no meio do voo fica pior do que nao ter
+// abertura nenhuma.
+//
+// Antes daqui saia o PNG da logotipia inteira, pilula branca e tudo, com
+// o alvo reduzido a um selo no meio da arte. O alvo e o dardo agora sao
+// dois vetores separados (os mesmos do icone do app), e e' por serem
+// separados que o arremesso existe.
 
 package br.com.lazersport.app.ui.abertura
 
-// De onde a marca parte ao entrar. Perto de 1 para a mola ter para onde
-// passar sem que o movimento vire um salto.
-
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -63,7 +68,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -72,6 +79,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -82,7 +90,8 @@ import br.com.lazersport.app.data.SaudeApi
 import br.com.lazersport.app.data.StatusRepository
 import br.com.lazersport.app.ui.components.BotaoPrincipal
 import br.com.lazersport.app.ui.components.BotaoVidro
-import br.com.lazersport.app.ui.menu.LogoCompleta
+import br.com.lazersport.app.ui.menu.NomeMarca
+import br.com.lazersport.app.ui.menu.SimboloMarca
 import br.com.lazersport.app.ui.menu.fundoHero
 import br.com.lazersport.app.ui.menu.vidroTingido
 import br.com.lazersport.app.ui.theme.Amarelo
@@ -99,7 +108,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
-private const val ESCALA_INICIAL = 0.86f
+/** De onde o alvo parte. Longe o bastante de 1 para a chegada ser vista,
+ *  perto o bastante para nao virar um salto. */
+private const val ESCALA_INICIAL = 0.78f
+
+/** Inclinacao inicial do alvo, em graus. Ele entra torto e endireita. */
+private const val GIRO_INICIAL = -13f
+
+/** Lado do alvo na abertura. E' a peca principal da tela: o que antes
+ *  aparecia aqui era a logotipia inteira, com o alvo do tamanho de um
+ *  selo no meio dela. */
+private val TAMANHO_ALVO = 196.dp
+
+/** Diametro da area onde halo e aneis sao desenhados, atras do alvo. */
+private val AREA_HALO = 320.dp
 
 @HiltViewModel
 class AberturaViewModel @Inject constructor(
@@ -126,47 +148,103 @@ fun AberturaScreen(
 
     val entrada = remember { Animatable(0f) }
     val escala = remember { Animatable(ESCALA_INICIAL) }
+    val giro = remember { Animatable(GIRO_INICIAL) }
+    // Percurso do dardo: 0 fora da tela, 1 cravado no centro do alvo.
+    val voo = remember { Animatable(0f) }
+    // Baque do impacto. Vai a 1 no quadro da pancada e volta a zero por
+    // mola pouco amortecida -- e' a oscilacao dela que da' o tremor.
+    val baque = remember { Animatable(0f) }
     val anel = remember { Animatable(0f) }
+    val nome = remember { Animatable(0f) }
     val saida = remember { Animatable(0f) }
 
-    // Aparecer e assentar são duas animações separadas de propósito: a
-    // opacidade sobe reta, enquanto a escala chega por mola e passa de
-    // leve do ponto antes de parar. É esse excesso mínimo que faz a marca
-    // parecer pousar, em vez de apenas aumentar de tamanho.
+    // A saida espera por isto. Sem a trava, uma API que responde em 200 ms
+    // faria a tela sumir com o dardo ainda no ar.
+    var cravou by remember { mutableStateOf(false) }
+
+    // A cena inteira em uma corrotina so', na ordem em que se ve': o alvo
+    // chega, o dardo cruza a tela, a pancada sacode tudo e so' entao o
+    // nome sobe. Encadeado, e nao disparado junto, porque o que faz uma
+    // abertura parecer intencional e' a ordem dos tempos.
     LaunchedEffect(Unit) {
-        // A mola assenta por volta de 400 ms -- antes de a opacidade
-        // fechar, de propósito: quando a marca termina de aparecer ela já
-        // está parada, e não chegando.
+        // Opacidade e escala andam separadas de proposito: a opacidade
+        // sobe reta, a escala chega por mola e passa de raspao do ponto
+        // antes de parar. E' esse excesso minimo que faz o alvo parecer
+        // pousar, em vez de apenas aumentar de tamanho.
         launch {
             escala.animateTo(
                 targetValue = 1f,
                 animationSpec = spring(
-                    dampingRatio = 0.5f,
-                    stiffness = Spring.StiffnessMediumLow,
+                    dampingRatio = 0.55f,
+                    stiffness = Spring.StiffnessLow,
                 ),
             )
         }
-        entrada.animateTo(1f, tween(520, easing = FastOutSlowInEasing))
+        launch {
+            giro.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(
+                    dampingRatio = 0.62f,
+                    stiffness = Spring.StiffnessLow,
+                ),
+            )
+        }
+        entrada.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
 
-        // Só agora, com a marca inteira na tela e imóvel, o anel abre do
-        // centro para fora: lê como o dardo acertando o alvo, que é o que
-        // a própria logotipia desenha. Amarrar o anel ao fim da mola não
-        // serviria -- ela devolve o controle assim que cruza o limiar de
-        // equilíbrio, com a marca ainda quase transparente.
-        anel.animateTo(1f, tween(820, easing = LinearOutSlowInEasing))
+        // Um respiro antes do arremesso. Sem ele o dardo entra junto com
+        // o alvo e a cena vira uma coisa so', ilegivel.
+        delay(120)
 
-        // Depois do impacto o mesmo anel vira radar e reabre de tempos em
-        // tempos: é o "estou trabalhando" sem escrever nada, e é o único
-        // efeito que de fato se enxerga nesta arte -- uma varredura de luz
-        // branca sumia por cima de uma logotipia que já é quase toda
-        // branca.
+        // O arremesso. Acelerando ate' o fim (FastOutLinearIn) porque um
+        // dardo nao freia antes de acertar -- com desaceleracao ele
+        // parecia pousar no alvo, e nao cravar.
+        voo.animateTo(1f, tween(300, easing = FastOutLinearInEasing))
+        cravou = true
+
+        // Impacto: tres coisas no mesmo quadro, cada uma no seu tempo.
+        launch {
+            // o alvo leva a pancada e balanca amortecido
+            baque.snapTo(1f)
+            baque.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(
+                    dampingRatio = 0.26f,
+                    stiffness = Spring.StiffnessHigh,
+                ),
+            )
+        }
+        launch {
+            // os aneis saem do centro
+            anel.snapTo(0f)
+            anel.animateTo(1f, tween(700, easing = LinearOutSlowInEasing))
+        }
+        launch {
+            // e a haste do dardo recua um fio e volta, vibrando
+            voo.animateTo(0.955f, tween(80, easing = LinearOutSlowInEasing))
+            voo.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = 0.34f,
+                    stiffness = Spring.StiffnessMedium,
+                ),
+            )
+        }
+
+        // O nome sobe por baixo do alvo com a pancada ainda acontecendo.
+        // Esperar o tremor acabar deixaria um buraco na cena.
+        delay(170)
+        nome.animateTo(1f, tween(440, easing = FastOutSlowInEasing))
+
+        // Passado o impacto, o mesmo anel vira radar e reabre de tempos
+        // em tempos: e' o "estou trabalhando" sem escrever nada.
         //
-        // O laço fica aqui, no efeito que nunca é recomposto, e não preso
-        // ao estado da API: cancelar no meio deixaria um anel parado na
-        // tela pelos 560 ms que antecedem a saída. Como a opacidade do
-        // anel acompanha a da marca, ele some junto na saída sozinho.
+        // O laco fica aqui, no efeito que nunca e' recomposto, e nao
+        // preso ao estado da API: cancelar no meio deixaria um anel
+        // parado na tela pelos milissegundos que antecedem a saida. Como
+        // a opacidade do anel acompanha a da marca, ele some junto na
+        // saida sozinho.
         while (true) {
-            delay(340)
+            delay(420)
             anel.snapTo(0f)
             anel.animateTo(1f, tween(1600, easing = LinearOutSlowInEasing))
         }
@@ -175,9 +253,13 @@ fun AberturaScreen(
     // Segura um instante mesmo quando a resposta é imediata, e só então
     // encena a saída: piscar a marca e sumir fica pior do que não ter
     // abertura nenhuma.
-    LaunchedEffect(estado.saude) {
+    LaunchedEffect(estado.saude, cravou) {
+        // cravou e' a trava do arremesso: sem ela uma API rapida cortava
+        // a cena com o dardo ainda no ar.
+        if (!cravou) return@LaunchedEffect
+
         if (estado.saude == SaudeApi.COMPLETA || estado.saude == SaudeApi.PARCIAL) {
-            delay(560)
+            delay(480)
             saida.animateTo(1f, tween(420, easing = LinearOutSlowInEasing))
             aoContinuar()
         }
@@ -196,21 +278,24 @@ fun AberturaScreen(
 
     val abriu = entrada.value
     val fechou = saida.value
+    val pancada = baque.value
 
-    // A marca chega pela mola, respira enquanto espera e cresce de novo
-    // ao sair. Os dois crescimentos vão na mesma direção: é isso que faz
-    // a passagem para a próxima tela parecer contínua, e não um corte.
+    // O alvo chega pela mola, leva o baque, respira enquanto espera e
+    // cresce de novo ao sair. Os dois crescimentos vao na mesma direcao:
+    // e' isso que faz a passagem para a proxima tela parecer continua, e
+    // nao um corte.
     val escalaMarca = escala.value *
             (if (respirando) respiro else 1f) *
+            (1f + 0.07f * pancada) *
             (1f + 0.09f * fechou)
 
-    // coerceIn porque alpha fora de 0..1 é comportamento indefinido, e a
+    // coerceIn porque alpha fora de 0..1 e' comportamento indefinido, e a
     // mola do assentamento passa de 1 por alguns quadros.
     val opacidade = (abriu * (1f - fechou)).coerceIn(0f, 1f)
 
-    // O que vem depois da marca entra escalonado: só começa a aparecer
-    // quando ela já percorreu metade do caminho.
-    val opacidadeApoio = (((abriu - 0.5f) / 0.5f).coerceIn(0f, 1f)) * (1f - fechou)
+    // Nome e cartao de status so' existem depois do impacto, e somem
+    // junto com o resto na saida.
+    val opacidadeApoio = (nome.value * (1f - fechou)).coerceIn(0f, 1f)
 
     Box(
         modifier = Modifier
@@ -225,12 +310,12 @@ fun AberturaScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(contentAlignment = Alignment.Center) {
-                // Halo atrás da marca: dá profundidade e é o que faz o
-                // respiro ser percebido, já que a logotipia sozinha varia
+                // Halo atras do alvo: da' profundidade e e' o que faz o
+                // respiro ser percebido, ja' que o alvo sozinho varia
                 // pouco demais para o olho notar.
                 Box(
                     modifier = Modifier
-                        .size(300.dp)
+                        .size(AREA_HALO)
                         .graphicsLayer {
                             val expansao = if (respirando) respiro else 1f
                             scaleX = expansao
@@ -249,40 +334,72 @@ fun AberturaScreen(
                         ),
                 )
 
-                // Anel: abre do centro para fora e some. Uma vez quando a
-                // marca assenta, e depois em laço enquanto a API não
-                // responde. Fica atrás da marca para não lavar o desenho.
+                // Aneis: abrem do centro para fora e somem. Dois, com o
+                // segundo atrasado, porque um anel sozinho le' como
+                // carregando e dois leem como onda de choque. No impacto
+                // saem uma vez; depois viram radar enquanto a API nao
+                // responde. Ficam atras do alvo para nao lavar o desenho.
                 Box(
                     modifier = Modifier
-                        .size(300.dp)
+                        .size(AREA_HALO)
                         .drawBehind {
-                            val avanco = anel.value
-                            if (avanco <= 0f || avanco >= 1f) return@drawBehind
-
-                            val raio = size.minDimension / 2f *
-                                    (0.42f + 0.68f * avanco)
-                            drawCircle(
-                                color = AzulDardo.copy(
-                                    alpha = 0.55f * (1f - avanco) * opacidade,
-                                ),
-                                radius = raio,
-                                style = Stroke(width = 2.dp.toPx()),
-                            )
+                            val raioMaximo = size.minDimension / 2f
+                            listOf(0f, 0.22f).forEach { atraso ->
+                                val avanco = anel.value - atraso
+                                if (avanco <= 0f || avanco >= 1f) {
+                                    return@forEach
+                                }
+                                drawCircle(
+                                    color = AzulDardo.copy(
+                                        alpha = 0.55f * (1f - avanco) *
+                                                opacidade,
+                                    ),
+                                    radius = raioMaximo *
+                                            (0.40f + 0.66f * avanco),
+                                    style = Stroke(width = 2.dp.toPx()),
+                                )
+                            }
                         },
                 )
 
-                LogoCompleta(
-                    largura = 250.dp,
+                SimboloMarca(
+                    tamanho = TAMANHO_ALVO,
+                    progressoDardo = voo.value,
                     modifier = Modifier.graphicsLayer {
                         scaleX = escalaMarca
                         scaleY = escalaMarca
                         alpha = opacidade
-                        // Sobe ao entrar; a distância diminui junto com a
-                        // escala, então a marca chega ao lugar e para.
-                        translationY = (1f - abriu) * 30.dp.toPx()
+                        // Entra torto e endireita; no impacto volta a
+                        // oscilar alguns graus.
+                        rotationZ = giro.value + pancada * 3.5f
+                        // O golpe vem de cima a direita, entao o alvo
+                        // recua para baixo e para a esquerda. A mola do
+                        // baque passa do zero, e e' isso que faz o
+                        // recuo virar tremor em vez de empurrao.
+                        val recuo = pancada * 7.dp.toPx()
+                        translationX = -recuo
+                        // Sobe ao entrar; a distancia diminui junto com a
+                        // escala, entao o alvo chega ao lugar e para.
+                        translationY = recuo + (1f - abriu) * 30.dp.toPx()
                     },
                 )
             }
+
+            // Curto de proposito: a caixa do halo tem AREA_HALO de lado e
+            // ja' deixa um vao entre o alvo e o que vem embaixo. Somar um
+            // espaco cheio aqui soltava o nome da marca.
+            Spacer(Modifier.height(8.dp))
+
+            NomeMarca(
+                tamanho = 30.sp,
+                mostrarAssinatura = true,
+                alinhamento = TextAlign.Center,
+                modifier = Modifier.graphicsLayer {
+                    alpha = opacidadeApoio
+                    // Sobe por baixo do alvo, no lugar de so' aparecer.
+                    translationY = (1f - opacidadeApoio) * 18.dp.toPx()
+                },
+            )
 
             Spacer(Modifier.height(44.dp))
 
