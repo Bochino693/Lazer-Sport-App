@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GERADO a partir de marca.py -- nao edite a mao: o icone e a tela de
+     abertura saem do mesmo desenho, e mexer so' aqui faz os dois
+     divergirem. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M21.00,60.00 a27.00,27.00 0 1,0 54.00,0 a27.00,27.00 0 1,0 -54.00,0 Z M27.50,60.00 a20.50,20.50 0 1,0 41.00,0 a20.50,20.50 0 1,0 -41.00,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M33.00,60.00 a15.00,15.00 0 1,0 30.00,0 a15.00,15.00 0 1,0 -30.00,0 Z M38.50,60.00 a9.50,9.50 0 1,0 19.00,0 a9.50,9.50 0 1,0 -19.00,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M43.50,60.00 a4.50,4.50 0 1,0 9.00,0 a4.50,4.50 0 1,0 -9.00,0 Z" />
+    <group android:rotation="-45.0"
+        android:pivotX="48.0" android:pivotY="60.0">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M76.00,58.50 L90.00,49.50 L88.00,58.00 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M76.00,61.50 L90.00,70.50 L88.00,62.00 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M65.50,56.20 L84.00,56.20 A3.80,3.80 0 0 1 84.00,63.80 L65.50,63.80 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M56.10,60.00 a5.40,5.40 0 1,0 10.80,0 a5.40,5.40 0 1,0 -10.80,0 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M48.00,60.00 L59.00,56.60 L59.00,63.40 Z" />
+    </group>
+</vector>

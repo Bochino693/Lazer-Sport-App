@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GERADO a partir de marca.py -- nao edite a mao: o icone e a tela de
+     abertura saem do mesmo desenho, e mexer so' aqui faz os dois
+     divergirem. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#A8183A"
+        android:pathData="M21.00,60.00 a27.00,27.00 0 1,0 54.00,0 a27.00,27.00 0 1,0 -54.00,0 Z" />
+    <path
+        android:fillColor="#E82F4F"
+        android:pathData="M22.00,60.00 a26.00,26.00 0 1,0 52.00,0 a26.00,26.00 0 1,0 -52.00,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M27.50,60.00 a20.50,20.50 0 1,0 41.00,0 a20.50,20.50 0 1,0 -41.00,0 Z" />
+    <path
+        android:fillColor="#E82F4F"
+        android:pathData="M33.00,60.00 a15.00,15.00 0 1,0 30.00,0 a15.00,15.00 0 1,0 -30.00,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38.50,60.00 a9.50,9.50 0 1,0 19.00,0 a9.50,9.50 0 1,0 -19.00,0 Z" />
+    <path
+        android:fillColor="#E82F4F"
+        android:pathData="M43.50,60.00 a4.50,4.50 0 1,0 9.00,0 a4.50,4.50 0 1,0 -9.00,0 Z" />
+</vector>

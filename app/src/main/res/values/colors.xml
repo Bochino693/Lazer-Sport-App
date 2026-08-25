@@ -18,9 +18,6 @@
          janela enquanto o Compose ainda não desenhou: sem isso o tema
          Light pinta branco e o app pisca branco antes da cena escura. -->
     <color name="ls_abertura_fundo">#071426</color>
-    <!-- Fundo do ícone adaptativo. Separado de "white" porque é uma
-         decisão de marca, não uma cor de interface. -->
-    <color name="ls_icone_fundo">#FFFFFF</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
 </resources>
