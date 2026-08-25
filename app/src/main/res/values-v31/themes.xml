@@ -1,10 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Do Android 12 em diante a abertura do sistema é desenhada pela
-     plataforma, antes de qualquer código do app rodar. Pintá-la na mesma
-     cor da cut scene faz a passagem do lançador para o app não ter
-     emenda: o fundo já está certo quando o Compose assume. -->
+     plataforma, antes de qualquer código do app rodar.
+
+     Sem windowSplashScreenAnimatedIcon a plataforma usa o ícone
+     adaptativo inteiro — símbolo E fundo — e ainda o recorta num
+     círculo. Era daí que vinha o disco com fundo próprio no meio da
+     tela, pequeno, antes da cut scene: não era a cut scene, era a
+     abertura do sistema.
+
+     Aqui entra só o alvo, sem fundo nenhum, sobre a mesma cor em que a
+     cut scene começa. A plataforma mostra os 2/3 centrais do desenho, e
+     a arte foi feita para caber exatamente nesse círculo — então o alvo
+     ocupa todo o espaço que o Android permite.
+
+     Só o alvo, e não o símbolo com o dardo, de propósito: o dardo é o
+     Compose que arremessa, um instante depois. Mostrá-lo já cravado aqui
+     faria ele sumir e voltar voando. -->
 <resources>
     <style name="Theme.LazerSport_APP" parent="Base.Theme.LazerSport_APP">
         <item name="android:windowSplashScreenBackground">@color/ls_abertura_fundo</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ls_marca_alvo</item>
     </style>
 </resources>

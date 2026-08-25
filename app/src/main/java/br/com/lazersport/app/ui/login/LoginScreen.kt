@@ -163,6 +163,9 @@ fun LoginScreen(
     aoCriarConta: () -> Unit,
     aoEntrarSemConta: () -> Unit,
     aoContinuarComGoogle: () -> Unit,
+    // Igual a' tela de boas-vindas: o botao so' aparece quando o /status/
+    // diz que o servidor tem o provedor no ar.
+    mostrarGoogle: Boolean,
     aoVoltar: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
@@ -358,13 +361,15 @@ fun LoginScreen(
                     cor = RosaMarca,
                 )
 
-                Spacer(Modifier.height(10.dp))
+                if (mostrarGoogle) {
+                    Spacer(Modifier.height(10.dp))
 
-                BotaoVidro(
-                    texto = "Continuar com Google",
-                    aoClicar = aoContinuarComGoogle,
-                    conteudoInicial = { MarcaGoogle() },
-                )
+                    BotaoVidro(
+                        texto = "Continuar com Google",
+                        aoClicar = aoContinuarComGoogle,
+                        conteudoInicial = { MarcaGoogle() },
+                    )
+                }
 
                 Spacer(Modifier.height(8.dp))
 

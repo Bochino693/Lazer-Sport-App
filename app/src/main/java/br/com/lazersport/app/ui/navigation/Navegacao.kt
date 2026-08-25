@@ -159,6 +159,7 @@ fun NavegacaoApp(
                     // fluxo /auth/app/entrar/, que devolve pelo deep link.
                     uriHandler.openUri(sessaoViewModel.urlLoginSocial("google"))
                 },
+                mostrarGoogle = api.temGoogle,
             )
         }
 
@@ -170,6 +171,7 @@ fun NavegacaoApp(
                 aoContinuarComGoogle = {
                     uriHandler.openUri(sessaoViewModel.urlLoginSocial("google"))
                 },
+                mostrarGoogle = api.temGoogle,
                 aoVoltar = { navController.popBackStack() },
             )
         }

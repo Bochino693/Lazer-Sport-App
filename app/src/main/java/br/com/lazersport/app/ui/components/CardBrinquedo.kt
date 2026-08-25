@@ -3,7 +3,6 @@
 
 package br.com.lazersport.app.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,13 +40,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import br.com.lazersport.app.R
+import br.com.lazersport.app.ui.menu.SimboloMarca
 import br.com.lazersport.app.ui.menu.vidro
 import br.com.lazersport.app.ui.theme.Amarelo
 import br.com.lazersport.app.ui.theme.AzulDardo
@@ -398,16 +396,14 @@ fun BolhaCategoria(
                         .clip(CircleShape),
                 )
             } else {
-                // Sempre a logotipia completa, nunca a versao recortada.
-                // O recuo maior compensa a arte ser larga: dentro do
-                // circulo ela aparece inteira, sem encostar na borda.
-                Image(
-                    painter = painterResource(R.drawable.ls_logo_completa),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
+                // O simbolo, e nao a logotipia inteira: o alvo e' redondo
+                // e preenche o circulo. A arte larga precisava de 22dp de
+                // recuo em cima e embaixo para caber aqui, e o que sobrava
+                // era uma tarja minuscula no meio de um circulo vazio.
+                SimboloMarca(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 8.dp, vertical = 22.dp),
+                        .padding(9.dp),
                 )
             }
         }
