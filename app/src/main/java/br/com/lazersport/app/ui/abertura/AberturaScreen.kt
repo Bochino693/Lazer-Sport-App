@@ -28,7 +28,6 @@ package br.com.lazersport.app.ui.abertura
 
 // De onde a marca parte ao entrar. Perto de 1 para a mola ter para onde
 // passar sem que o movimento vire um salto.
-private const val ESCALA_INICIAL = 0.86f
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -98,6 +97,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+
+
+private const val ESCALA_INICIAL = 0.86f
 
 @HiltViewModel
 class AberturaViewModel @Inject constructor(
