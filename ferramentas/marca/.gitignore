@@ -1,0 +1,6 @@
+# Saidas dos scripts: SVG de conferencia, PNG por densidade e cache do
+# Python. O que o app usa de verdade sao os vetores em app/src/main/res,
+# e esses sim vao versionados.
+*.svg
+*.png
+__pycache__/

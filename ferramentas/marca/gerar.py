@@ -8,8 +8,11 @@ from marca import (ALVO, BRANCO, CENTRO, DARDO, DARDO_ROTACAO,
                    DARDO_SOMBRA_DX, DARDO_SOMBRA_DY, FUNDO_BASE,
                    FUNDO_TOPO, SOMBRA, circulo, poligono)
 
-APP = "/home/user/lazer-sport-app/app/src/main/res"
-SCRATCH = os.path.dirname(os.path.abspath(__file__))
+AQUI = os.path.dirname(os.path.abspath(__file__))
+# ferramentas/marca -> raiz do projeto -> res do app
+RAIZ = os.path.dirname(os.path.dirname(AQUI))
+APP = os.path.join(RAIZ, "app", "src", "main", "res")
+SCRATCH = AQUI
 
 CABECALHO = """<?xml version="1.0" encoding="utf-8"?>
 <!-- GERADO a partir de marca.py — nao edite a mao: o icone e a tela de
