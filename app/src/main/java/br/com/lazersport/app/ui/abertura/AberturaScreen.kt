@@ -310,6 +310,38 @@ fun AberturaScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(contentAlignment = Alignment.Center) {
+                // Nucleo escuro. Nao e' decoracao: os brilhos do fundo
+                // agora sao fortes, e o alvo vermelho sobre magenta aceso
+                // some. Este poco de sombra devolve ao simbolo o contraste
+                // que ele tinha sobre o azul escuro, sem precisar apagar a
+                // cor no resto da tela.
+                //
+                // Desenhado em drawBehind, e nao como um Box com tamanho
+                // proprio: precisa se espalhar bem alem do halo para a
+                // borda nao aparecer, e uma caixa desse tamanho viraria a
+                // maior filha daqui, empurrando o nome e o cartao de
+                // status para fora da tela. drawBehind pinta fora dos
+                // limites do no' sem medir nada.
+                Box(
+                    modifier = Modifier
+                        .size(AREA_HALO)
+                        .drawBehind {
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF03070F).copy(alpha = 0.88f),
+                                        Color(0xFF03070F).copy(alpha = 0.60f),
+                                        Color.Transparent,
+                                    ),
+                                    center = center,
+                                    radius = size.minDimension * 0.85f,
+                                ),
+                                radius = size.minDimension * 0.85f,
+                                alpha = opacidade,
+                            )
+                        },
+                )
+
                 // Halo atras do alvo: da' profundidade e e' o que faz o
                 // respiro ser percebido, ja' que o alvo sozinho varia
                 // pouco demais para o olho notar.

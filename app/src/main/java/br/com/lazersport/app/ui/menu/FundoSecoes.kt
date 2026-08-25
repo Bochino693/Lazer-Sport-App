@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -24,11 +25,15 @@ import androidx.compose.ui.unit.dp
 import br.com.lazersport.app.ui.theme.AzulDardo
 import br.com.lazersport.app.ui.theme.RaioCard
 
-private val BrilhoAzul = Color(0xFF0878F9)
-private val BrilhoRosa = Color(0xFFEE405E)
+// Os brilhos sao compostos em Screen (ver brilho() la embaixo), entao
+// entram na cor cheia: quem controla a forca e' a opacidade passada em
+// cada fundo, e nao um tom ja' rebaixado aqui.
+private val BrilhoCiano = Color(0xFF00E5FF)
+private val BrilhoMagenta = Color(0xFFFF2D6F)
+private val BrilhoVioleta = Color(0xFF8B5CF6)
 
 private val PassoGrade = 42.dp
-private val CorGrade = Color(0xFF78A5E0).copy(alpha = 0.055f)
+private val CorGrade = Color(0xFF8CC8FF).copy(alpha = 0.10f)
 
 // ============ FUNDOS DE TELA ============
 
@@ -36,13 +41,14 @@ private val CorGrade = Color(0xFF78A5E0).copy(alpha = 0.055f)
 fun Modifier.fundoNoite(): Modifier = drawBehind {
     drawRect(
         Brush.linearGradient(
-            colors = listOf(Color(0xFF060E1C), Color(0xFF0A1A33), Color(0xFF081F3D)),
+            colors = listOf(Color(0xFF050A22), Color(0xFF0C1444), Color(0xFF14208A)),
             start = Offset(0f, 0f),
             end = Offset(size.width, size.height),
         )
     )
-    brilho(BrilhoAzul, 0.22f, 0.08f, 0.06f)
-    brilho(BrilhoRosa, 0.13f, 0.94f, 0.86f)
+    brilho(BrilhoCiano, 0.34f, 0.06f, 0.06f)
+    brilho(BrilhoMagenta, 0.30f, 0.94f, 0.88f)
+    brilho(BrilhoVioleta, 0.22f, 0.52f, 0.46f)
     grade()
 }
 
@@ -50,13 +56,14 @@ fun Modifier.fundoNoite(): Modifier = drawBehind {
 fun Modifier.fundoHero(): Modifier = drawBehind {
     drawRect(
         Brush.linearGradient(
-            colors = listOf(Color(0xFF071426), Color(0xFF0A2447), Color(0xFF063D83)),
+            colors = listOf(Color(0xFF050A22), Color(0xFF101C6B), Color(0xFF2A2FC4)),
             start = Offset(0f, 0f),
             end = Offset(size.width, size.height),
         )
     )
-    brilho(BrilhoRosa, 0.25f, 0.88f, 0.12f)
-    brilho(BrilhoAzul, 0.35f, 0.08f, 0.94f)
+    brilho(BrilhoMagenta, 0.62f, 0.88f, 0.06f)
+    brilho(BrilhoCiano, 0.58f, 0.04f, 0.94f)
+    brilho(BrilhoVioleta, 0.45f, 0.50f, 0.44f)
     grade()
 }
 
@@ -64,13 +71,13 @@ fun Modifier.fundoHero(): Modifier = drawBehind {
 fun Modifier.fundoSecaoEscura(): Modifier = drawBehind {
     drawRect(
         Brush.linearGradient(
-            colors = listOf(Color(0xFF0A1728), Color(0xFF050B14), Color(0xFF07111F)),
+            colors = listOf(Color(0xFF080E30), Color(0xFF03050F), Color(0xFF0A1046)),
             start = Offset(0f, 0f),
             end = Offset(size.width, size.height),
         )
     )
-    brilho(BrilhoAzul, 0.20f, 0.06f, 0.08f)
-    brilho(BrilhoRosa, 0.14f, 0.95f, 0.82f)
+    brilho(BrilhoCiano, 0.26f, 0.06f, 0.08f)
+    brilho(BrilhoMagenta, 0.22f, 0.95f, 0.84f)
     grade()
 }
 
@@ -81,35 +88,42 @@ fun Modifier.fundoSecaoEscura(): Modifier = drawBehind {
 fun Modifier.fundoSecaoAzul(): Modifier = drawBehind {
     drawRect(
         Brush.linearGradient(
-            colors = listOf(Color(0xFF0B2547), Color(0xFF0E3059), Color(0xFF0A1F3E)),
+            colors = listOf(Color(0xFF0D1A5E), Color(0xFF1B2A9E), Color(0xFF0A1246)),
             start = Offset(0f, 0f),
             end = Offset(size.width, size.height),
         )
     )
-    brilho(AzulDardo, 0.16f, 0.10f, 0.10f)
-    brilho(BrilhoRosa, 0.10f, 0.92f, 0.90f)
+    brilho(AzulDardo, 0.44f, 0.10f, 0.10f)
+    brilho(BrilhoMagenta, 0.30f, 0.92f, 0.90f)
     grade()
 }
 
 // ============ FAIXAS SOLIDAS (chamada pra acao) ============
 
 fun Modifier.fundoFaixaAzul(): Modifier = background(
-    Brush.linearGradient(listOf(Color(0xFF004AAD), Color(0xFF0878F9)))
+    Brush.linearGradient(listOf(Color(0xFF2A2FC4), Color(0xFF00E5FF)))
 )
 
 fun Modifier.fundoFaixaRosa(): Modifier = background(
-    Brush.linearGradient(listOf(Color(0xFFB43544), Color(0xFFEE405E)))
+    Brush.linearGradient(listOf(Color(0xFFFF2D6F), Color(0xFFFF7A29)))
 )
 
 // ============ VIDRO (substituiu o cartao branco) ============
 
+/**
+ * Cartao de vidro.
+ *
+ * O veu e a borda sao azuis, e nao brancos. Branco translucido sobre um
+ * fundo colorido dessatura o que esta' embaixo: era o que transformava
+ * cada cartao numa mancha cinza no meio da tela.
+ */
 fun Modifier.vidro(
     raio: Dp = RaioCard,
-    intensidade: Float = 0.06f,
-    corBorda: Color = Color.White.copy(alpha = 0.12f),
+    intensidade: Float = 0.14f,
+    corBorda: Color = Color(0xFFA0D2FF).copy(alpha = 0.30f),
 ): Modifier = this
     .clip(RoundedCornerShape(raio))
-    .background(Color.White.copy(alpha = intensidade))
+    .background(Color(0xFF5A96FF).copy(alpha = intensidade))
     .border(1.dp, corBorda, RoundedCornerShape(raio))
 
 fun Modifier.vidroTingido(
@@ -124,13 +138,27 @@ fun Modifier.vidroTingido(
 // ============ PRIMITIVAS ============
 
 /** Brilho radial. x/y sao fracoes 0..1, igual ao `circle at 88% 12%`. */
+/**
+ * Mancha de luz colorida num canto da tela.
+ *
+ * BlendMode.Screen e' o ponto inteiro desta funcao. Composta do jeito
+ * normal (SrcOver), uma cor saturada a 20% sobre azul escuro nao fica
+ * "um azul levemente rosado" -- fica cinza-arroxeado, porque a mistura
+ * puxa os dois para o meio. Screen soma luz: o fundo escuro quase nao
+ * resiste e o matiz aparece na propria cor.
+ *
+ * E' por isso que aqui as intensidades sao altas (0.3 a 0.6) e mesmo
+ * assim a tela nao "estoura": Screen sobre preto rende a cor, sobre
+ * claro rende quase nada.
+ */
 private fun DrawScope.brilho(cor: Color, intensidade: Float, x: Float, y: Float) {
     drawRect(
         Brush.radialGradient(
             colors = listOf(cor.copy(alpha = intensidade), Color.Transparent),
             center = Offset(size.width * x, size.height * y),
-            radius = size.maxDimension * 0.85f,
-        )
+            radius = size.maxDimension * 0.72f,
+        ),
+        blendMode = BlendMode.Screen,
     )
 }
 

@@ -17,7 +17,7 @@
     <!-- Primeira cor do gradiente da abertura (fundoHero). É o fundo da
          janela enquanto o Compose ainda não desenhou: sem isso o tema
          Light pinta branco e o app pisca branco antes da cena escura. -->
-    <color name="ls_abertura_fundo">#071426</color>
+    <color name="ls_abertura_fundo">#050A22</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
 </resources>

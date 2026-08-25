@@ -282,14 +282,14 @@ fun FundoIcone(
     }
 }
 
-/** Gradiente da marca: azul-noite abrindo para o vermelho do alvo. */
+/** Gradiente da marca: indigo abrindo em azul eletrico e no vermelho. */
 private fun Modifier.fundoMarca(): Modifier = this.then(
     Modifier.background(
         brush = Brush.linearGradient(
             colors = listOf(
-                Color(0xFF06162C),
-                Color(0xFF0756B5),
-                Color(0xFFB62843),
+                Color(0xFF0A1046),
+                Color(0xFF2A2FC4),
+                Color(0xFFFF2D6F),
             ),
         ),
     ),
