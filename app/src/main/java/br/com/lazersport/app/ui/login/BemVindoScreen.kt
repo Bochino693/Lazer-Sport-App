@@ -52,6 +52,11 @@ fun BemVindoScreen(
     aoContinuarSemLogin: () -> Unit,
     aoCriarConta: () -> Unit,
     aoContinuarComGoogle: () -> Unit,
+    // Vem do /status/ da API. O botao do Google so' existe quando o
+    // servidor de fato tem o provedor configurado -- sem isso o app
+    // oferecia o login, abria o navegador e a pessoa caia num 404 do
+    // allauth, voltando sem conta nenhuma.
+    mostrarGoogle: Boolean,
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -80,6 +85,7 @@ fun BemVindoScreen(
                     aoContinuarSemLogin = aoContinuarSemLogin,
                     aoCriarConta = aoCriarConta,
                     aoContinuarComGoogle = aoContinuarComGoogle,
+                    mostrarGoogle = mostrarGoogle,
                     compacto = true,
                     modifier = Modifier
                         .weight(1f)
@@ -110,6 +116,7 @@ fun BemVindoScreen(
                     aoContinuarSemLogin = aoContinuarSemLogin,
                     aoCriarConta = aoCriarConta,
                     aoContinuarComGoogle = aoContinuarComGoogle,
+                    mostrarGoogle = mostrarGoogle,
                     compacto = false,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -126,6 +133,7 @@ private fun ConteudoBemVindo(
     aoContinuarSemLogin: () -> Unit,
     aoCriarConta: () -> Unit,
     aoContinuarComGoogle: () -> Unit,
+    mostrarGoogle: Boolean,
     compacto: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -182,13 +190,15 @@ private fun ConteudoBemVindo(
             )
         }
 
-        Spacer(Modifier.size(10.dp))
+        if (mostrarGoogle) {
+            Spacer(Modifier.size(10.dp))
 
-        BotaoVidro(
-            texto = "Continuar com Google",
-            aoClicar = aoContinuarComGoogle,
-            conteudoInicial = { MarcaGoogle() },
-        )
+            BotaoVidro(
+                texto = "Continuar com Google",
+                aoClicar = aoContinuarComGoogle,
+                conteudoInicial = { MarcaGoogle() },
+            )
+        }
 
         Spacer(Modifier.size(6.dp))
 
