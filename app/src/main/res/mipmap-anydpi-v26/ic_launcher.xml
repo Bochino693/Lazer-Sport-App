@@ -5,7 +5,7 @@
 
      Antes aqui entrava a logotipia inteira sobre branco. Numa tela de
      48dp o nome vira borrão, a assinatura some e o que sobra é um
-     retângulo branco com sujeira no meio -- e ainda por cima o manifesto
+     retângulo branco com sujeira no meio — e ainda por cima o manifesto
      nem chegava a usar este arquivo, apontava direto para o PNG.
 
      A arte cabe inteira no círculo seguro de 36 de raio: nenhuma máscara
