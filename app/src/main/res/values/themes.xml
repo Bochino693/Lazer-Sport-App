@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LazerSport_APP" parent="Theme.Material3.Light.NoActionBar">
+    <style name="Base.Theme.LazerSport_APP" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/ls_azul</item>
         <item name="colorSecondary">@color/ls_azul_escuro</item>
         <item name="colorTertiary">@color/ls_vermelho</item>
@@ -10,5 +10,13 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowNoTitle">true</item>
+
+        <!-- A janela nasce na cor em que a abertura começa. O tema é Light
+             (o app inteiro é claro), então sem isto o Android pintaria
+             branco até o Compose desenhar, e a cut scene escura entraria
+             depois de um flash branco. -->
+        <item name="android:windowBackground">@color/ls_abertura_fundo</item>
     </style>
+
+    <style name="Theme.LazerSport_APP" parent="Base.Theme.LazerSport_APP" />
 </resources>
