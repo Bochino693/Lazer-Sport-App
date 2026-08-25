@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Do Android 12 em diante a abertura do sistema é desenhada pela
+     plataforma, antes de qualquer código do app rodar. Pintá-la na mesma
+     cor da cut scene faz a passagem do lançador para o app não ter
+     emenda: o fundo já está certo quando o Compose assume. -->
+<resources>
+    <style name="Theme.LazerSport_APP" parent="Base.Theme.LazerSport_APP">
+        <item name="android:windowSplashScreenBackground">@color/ls_abertura_fundo</item>
+    </style>
+</resources>
